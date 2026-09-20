@@ -42,6 +42,12 @@ data class PersonalRecordWithExercise(
     val exercise: ExerciseEntity,
 )
 
+/** Just the id and instant of a workout, for collision checks on a busy day. */
+data class WorkoutInstant(
+    val id: String,
+    val performedAt: Long,
+)
+
 /** Projection for the leaderboard screens in Phase 4. */
 data class LeaderboardRow(
     val userId: String,

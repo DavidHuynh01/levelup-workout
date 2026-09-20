@@ -27,6 +27,7 @@ import com.davidhuynh.levelup.domain.model.WeightUnit
 import com.davidhuynh.levelup.domain.model.Workout
 import com.davidhuynh.levelup.domain.repository.AuthRepository
 import com.davidhuynh.levelup.ui.common.EmptyState
+import com.davidhuynh.levelup.ui.common.LoadingScreen
 import com.davidhuynh.levelup.ui.theme.AccentLime
 import com.davidhuynh.levelup.ui.theme.Spacing
 import kotlinx.coroutines.flow.SharingStarted
@@ -71,7 +72,12 @@ fun HistoryScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    if (!state.isLoading && state.workouts.isEmpty()) {
+    if (state.isLoading) {
+        LoadingScreen()
+        return
+    }
+
+    if (state.workouts.isEmpty()) {
         EmptyState(
             emoji = "📓",
             title = "No workouts yet",

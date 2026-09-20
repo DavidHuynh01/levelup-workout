@@ -32,6 +32,7 @@ import com.davidhuynh.levelup.domain.repository.AuthRepository
 import com.davidhuynh.levelup.domain.repository.PersonalRecordRepository
 import com.davidhuynh.levelup.domain.repository.StatsRepository
 import com.davidhuynh.levelup.ui.common.EmptyState
+import com.davidhuynh.levelup.ui.common.LoadingScreen
 import com.davidhuynh.levelup.ui.theme.AccentLime
 import com.davidhuynh.levelup.ui.theme.Spacing
 import com.davidhuynh.levelup.ui.theme.StreakOrange
@@ -53,6 +54,8 @@ data class ProgressUiState(
             .groupBy { it.exerciseName }
             .toList()
             .sortedByDescending { (_, records) -> records.maxOf { it.achievedAt } }
+
+    val hasRecords: Boolean get() = records.isNotEmpty()
 }
 
 class ProgressViewModel(
@@ -79,8 +82,16 @@ class ProgressViewModel(
 private val recordDateFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
 
 @Composable
-fun ProgressScreen(viewModel: ProgressViewModel) {
+fun ProgressScreen(
+    viewModel: ProgressViewModel,
+    onOpenExercise: (String) -> Unit,
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    if (state.isLoading) {
+        LoadingScreen()
+        return
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -99,7 +110,7 @@ fun ProgressScreen(viewModel: ProgressViewModel) {
             Spacer(Modifier.height(Spacing.sm))
         }
 
-        if (!state.isLoading && state.records.isEmpty()) {
+        if (!state.hasRecords) {
             item {
                 EmptyState(
                     emoji = "🏅",
@@ -114,6 +125,7 @@ fun ProgressScreen(viewModel: ProgressViewModel) {
                 exerciseName = exerciseName,
                 records = records,
                 unit = state.weightUnit,
+                onClick = { records.firstOrNull()?.let { onOpenExercise(it.exerciseId) } },
             )
             Spacer(Modifier.height(Spacing.sm))
         }
@@ -200,13 +212,26 @@ private fun ExerciseRecordCard(
     exerciseName: String,
     records: List<PersonalRecord>,
     unit: WeightUnit,
+    onClick: () -> Unit,
 ) {
     Card(
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Column(modifier = Modifier.padding(Spacing.md)) {
-            Text(text = exerciseName, style = MaterialTheme.typography.titleMedium)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(text = exerciseName, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = "History ›",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             Spacer(Modifier.height(Spacing.sm))
 
             records.sortedBy { it.recordType.ordinal }.forEach { record ->

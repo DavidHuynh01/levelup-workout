@@ -13,6 +13,7 @@ import com.davidhuynh.levelup.domain.model.PrType
 import com.davidhuynh.levelup.domain.model.WeightUnit
 import com.davidhuynh.levelup.domain.security.SecureTokenGenerator
 import com.davidhuynh.levelup.domain.util.AppClock
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -168,6 +169,40 @@ class RecomputeIntegrationTest {
         assertEquals(1, chain.size)
         assertEquals(130.0, chain.single().record.value, 0.001)
         assertEquals("2026-03-01", chain.single().record.achievedOnLocalDate)
+    }
+
+    /**
+     * Regression test. Two sessions on one day used to be stamped at the same instant, so
+     * the record chain ordered them by a random id: the earlier record disappeared instead
+     * of being superseded by the later one.
+     */
+    @Test
+    fun twoWorkoutsOnTheSameDayKeepBothLinksOfTheRecordChain() = runBlocking {
+        save(day = "2026-03-01", exerciseId = benchId, reps = 8, weightKg = 84.0)
+        save(day = "2026-03-01", exerciseId = benchId, reps = 3, weightKg = 102.0)
+
+        val chain = database.personalRecordDao()
+            .observeHistoryForExercise(userId, benchId)
+            .first()
+            .map { it.record }
+            .filter { it.recordType == PrType.MAX_WEIGHT.name }
+            .sortedBy { it.achievedAt }
+
+        assertEquals(2, chain.size)
+        assertEquals(84.0, chain[0].value, 0.001)
+        assertEquals(102.0, chain[1].value, 0.001)
+        assertNotNull("the earlier record should be superseded", chain[0].supersededAt)
+        assertNull("the later record should stand", chain[1].supersededAt)
+    }
+
+    @Test
+    fun sessionsOnTheSameDayGetDistinctInstants() = runBlocking {
+        save(day = "2026-03-01", exerciseId = benchId, reps = 5, weightKg = 100.0)
+        save(day = "2026-03-01", exerciseId = squatId, reps = 5, weightKg = 140.0)
+
+        val instants = database.workoutDao().performedAtOn(userId, "2026-03-01").map { it.performedAt }
+        assertEquals(2, instants.size)
+        assertEquals(2, instants.distinct().size)
     }
 
     @Test

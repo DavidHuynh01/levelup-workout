@@ -239,9 +239,15 @@ class LogWorkoutViewModel(
         _state.update { it.copy(isSaving = true, error = null) }
         viewModelScope.launch {
             val zone = clock.zone()
-            // Keep the time of day if the workout is being edited on the same date,
-            // otherwise put it at noon so the date the user picked is unambiguous.
-            val performedAt = current.date.atTime(12, 0).atZone(zone).toInstant().toEpochMilli()
+            // Today's workouts get the real time of day. Two sessions on one day are
+            // common, and stamping both at noon would leave the records with no way to
+            // tell which came first. A back-dated workout has no true time, so it sits at
+            // noon and the repository nudges it past any session already on that date.
+            val performedAt = if (current.date == clock.today()) {
+                clock.nowMillis()
+            } else {
+                current.date.atTime(12, 0).atZone(zone).toInstant().toEpochMilli()
+            }
 
             val draft = WorkoutDraft(
                 workoutId = workoutId,

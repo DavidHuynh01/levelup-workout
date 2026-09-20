@@ -8,7 +8,7 @@ record per exercise, and a training streak.
 
 ## Status
 
-Everything through the friend system is built and running on a device.
+All six phases are built and running on a device.
 
 | Phase | Feature | State |
 |---|---|---|
@@ -17,7 +17,7 @@ Everything through the friend system is built and running on a device.
 | 3 | Personal records, streaks, consistency | Done |
 | 4 | Global and friends leaderboards | Done |
 | 5 | Friend requests with an in-app badge | Done |
-| 6 | Profile polish, empty and error states | Mostly done |
+| 6 | Profile editing, record history, empty and loading states | Done |
 
 ## Features
 
@@ -29,7 +29,10 @@ Everything through the friend system is built and running on a device.
   full set breakdown, and edit or delete any past workout.
 - **Personal records** — three per exercise, detected automatically: heaviest weight, best
   Epley-estimated 1RM, and best single-session volume. Breaking one raises a dialog naming
-  what you beat and by how much.
+  what you beat and by how much, and each exercise keeps a full record timeline including
+  the records it has since beaten.
+- **Profile** — lifetime stats, an editable display name, and an emoji avatar that shows up
+  on the leaderboard.
 - **Streaks and consistency** — a running day streak with a one-day grace period, a longest
   streak, and sessions logged this ISO week.
 - **Leaderboards** — a global board and a friends-only board, each rankable by total volume,
@@ -117,7 +120,7 @@ they change with the calendar rather than with anything the user does.
 
 ```powershell
 .\gradlew.bat :app:testDebugUnitTest          # 74 JVM tests, no emulator needed
-.\gradlew.bat :app:connectedDebugAndroidTest  # 15 Room tests, needs a device
+.\gradlew.bat :app:connectedDebugAndroidTest  # 17 Room tests, needs a device
 ```
 
 The JVM tests cover volume, 1RM estimation, record detection (including chain rebuilds after

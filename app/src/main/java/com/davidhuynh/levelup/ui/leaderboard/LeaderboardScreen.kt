@@ -40,6 +40,7 @@ import com.davidhuynh.levelup.domain.model.WeightUnit
 import com.davidhuynh.levelup.domain.repository.AuthRepository
 import com.davidhuynh.levelup.domain.repository.LeaderboardRepository
 import com.davidhuynh.levelup.ui.common.EmptyState
+import com.davidhuynh.levelup.ui.common.LoadingScreen
 import com.davidhuynh.levelup.ui.theme.AccentLime
 import com.davidhuynh.levelup.ui.theme.Spacing
 import com.davidhuynh.levelup.ui.theme.StreakOrange
@@ -144,22 +145,29 @@ fun LeaderboardScreen(
             }
         }
 
-        if (state.friendsBoardIsEmpty && !state.isLoading) {
-            EmptyState(
+        // The scope and metric controls stay put while the list below them swaps, so
+        // switching boards does not make the whole screen jump.
+        when {
+            state.isLoading -> LoadingScreen()
+
+            state.friendsBoardIsEmpty -> EmptyState(
                 emoji = "👥",
                 title = "No friends yet",
                 body = "Add a few lifters and this board fills up with people you actually know.",
                 action = { TextButton(onClick = onFindFriends) { Text("Find friends") } },
             )
-            return
-        }
 
-        LazyColumn(modifier = Modifier.padding(horizontal = Spacing.md)) {
-            items(state.entries, key = { it.userId }) { entry ->
-                LeaderboardRowCard(entry = entry, metric = state.metric, unit = state.weightUnit)
-                Spacer(Modifier.height(Spacing.sm))
+            else -> LazyColumn(modifier = Modifier.padding(horizontal = Spacing.md)) {
+                items(state.entries, key = { it.userId }) { entry ->
+                    LeaderboardRowCard(
+                        entry = entry,
+                        metric = state.metric,
+                        unit = state.weightUnit,
+                    )
+                    Spacer(Modifier.height(Spacing.sm))
+                }
+                item { Spacer(Modifier.height(Spacing.xl)) }
             }
-            item { Spacer(Modifier.height(Spacing.xl)) }
         }
     }
 }

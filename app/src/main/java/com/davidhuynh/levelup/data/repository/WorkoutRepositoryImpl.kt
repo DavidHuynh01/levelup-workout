@@ -96,12 +96,17 @@ class WorkoutRepositoryImpl(
         val localDate = LocalDate.ofInstant(Instant.ofEpochMilli(draft.performedAt), zone)
         val existing = if (isEdit) workoutDao.getWorkoutRow(workoutId) else null
 
+        // Records are ordered by when a set was completed, so two workouts must never share
+        // an instant. Back-dated sessions all arrive at noon, so each one after the first
+        // on a given day is nudged forward to keep "which came first" answerable.
+        val performedAt = uniqueInstantFor(draft, workoutId, localDate.toString())
+
         workoutDao.upsertWorkout(
             WorkoutEntity(
                 id = workoutId,
                 userId = draft.userId,
                 name = draft.name.ifBlank { defaultName(localDate) },
-                performedAt = draft.performedAt,
+                performedAt = performedAt,
                 localDate = localDate.toString(),
                 zoneId = zone.id,
                 notes = draft.notes?.takeIf { it.isNotBlank() },
@@ -143,7 +148,7 @@ class WorkoutRepositoryImpl(
                     isWarmup = setDraft.isWarmup,
                     rpe = setDraft.rpe,
                     // Sets share the workout's instant, offset so their order is stable.
-                    completedAt = draft.performedAt + (exerciseIndex * 100L) + setIndex,
+                    completedAt = performedAt + (exerciseIndex * 100L) + setIndex,
                     localDate = localDate.toString(),
                 )
             }
@@ -166,7 +171,38 @@ class WorkoutRepositoryImpl(
         recomputer.recomputeAfterMutation(userId, affected, workoutId = null)
     }
 
+    /**
+     * Returns an instant no other workout of this user already occupies.
+     *
+     * Sets are ordered by completedAt when records are rebuilt. If two sessions on the
+     * same day shared one instant, the tie would break on a random id and the earlier
+     * session could end up looking later — which silently drops a record that should have
+     * been superseded rather than replaced.
+     */
+    private suspend fun uniqueInstantFor(
+        draft: WorkoutDraft,
+        workoutId: String,
+        localDate: String,
+    ): Long {
+        val taken = workoutDao.performedAtOn(draft.userId, localDate)
+            .filterNot { it.id == workoutId }
+            .map { it.performedAt }
+            .toSet()
+
+        // Each set is offset by up to a few hundred ms, so sessions are spaced past that.
+        var candidate = draft.performedAt
+        while (taken.any { kotlin.math.abs(it - candidate) < SESSION_SPACING_MS }) {
+            candidate += SESSION_SPACING_MS
+        }
+        return candidate
+    }
+
     private fun defaultName(date: LocalDate): String = "Workout on $date"
 
     data class SaveOutcome(val workoutId: String, val awards: List<PrAward>)
+
+    private companion object {
+        /** One minute apart: far clear of the per-set millisecond offsets. */
+        const val SESSION_SPACING_MS = 60_000L
+    }
 }

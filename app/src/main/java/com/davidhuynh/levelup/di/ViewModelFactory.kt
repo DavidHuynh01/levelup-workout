@@ -13,6 +13,7 @@ import com.davidhuynh.levelup.ui.history.HistoryViewModel
 import com.davidhuynh.levelup.ui.home.HomeViewModel
 import com.davidhuynh.levelup.ui.leaderboard.LeaderboardViewModel
 import com.davidhuynh.levelup.ui.profile.ProfileViewModel
+import com.davidhuynh.levelup.ui.progress.ExerciseRecordsViewModel
 import com.davidhuynh.levelup.ui.progress.ProgressViewModel
 import com.davidhuynh.levelup.ui.workout.detail.WorkoutDetailViewModel
 import com.davidhuynh.levelup.ui.workout.log.LogWorkoutViewModel
@@ -80,6 +81,15 @@ fun levelUpViewModelFactory(container: AppContainer): ViewModelProvider.Factory 
     }
 
     initializer {
+        ExerciseRecordsViewModel(
+            userId = requireUserId(),
+            exerciseId = requireNotNull(get(EXERCISE_ID_KEY)) { "exerciseId is required" },
+            recordRepository = container.personalRecordRepository,
+            authRepository = container.authRepository,
+        )
+    }
+
+    initializer {
         LeaderboardViewModel(
             userId = requireUserId(),
             leaderboardRepository = container.leaderboardRepository,
@@ -109,6 +119,7 @@ fun levelUpViewModelFactory(container: AppContainer): ViewModelProvider.Factory 
  */
 val USER_ID_KEY = object : CreationExtras.Key<String> {}
 val WORKOUT_ID_KEY = object : CreationExtras.Key<String> {}
+val EXERCISE_ID_KEY = object : CreationExtras.Key<String> {}
 
 private fun CreationExtras.requireUserId(): String =
     requireNotNull(get(USER_ID_KEY)) { "userId is required for this screen" }

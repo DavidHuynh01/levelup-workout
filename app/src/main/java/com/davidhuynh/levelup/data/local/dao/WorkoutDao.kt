@@ -10,6 +10,7 @@ import com.davidhuynh.levelup.data.local.entity.ExerciseEntity
 import com.davidhuynh.levelup.data.local.entity.ExerciseSetEntity
 import com.davidhuynh.levelup.data.local.entity.WorkoutEntity
 import com.davidhuynh.levelup.data.local.entity.WorkoutExerciseEntity
+import com.davidhuynh.levelup.data.local.relation.WorkoutInstant
 import com.davidhuynh.levelup.data.local.relation.WorkoutWithDetails
 import kotlinx.coroutines.flow.Flow
 
@@ -99,6 +100,10 @@ interface WorkoutDao {
 
     @Query("SELECT id FROM workouts WHERE userId = :userId")
     suspend fun workoutIdsForUser(userId: String): List<String>
+
+    /** Used to keep two sessions on the same day from sharing an instant. */
+    @Query("SELECT id, performedAt FROM workouts WHERE userId = :userId AND localDate = :localDate")
+    suspend fun performedAtOn(userId: String, localDate: String): List<WorkoutInstant>
 
     @Query("UPDATE workouts SET totalVolumeKg = :volumeKg, setCount = :setCount, exerciseCount = :exerciseCount, updatedAt = :updatedAt WHERE id = :workoutId")
     suspend fun updateCachedTotals(

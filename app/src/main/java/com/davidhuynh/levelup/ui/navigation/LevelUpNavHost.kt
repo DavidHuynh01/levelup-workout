@@ -19,6 +19,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.davidhuynh.levelup.di.AppContainer
+import com.davidhuynh.levelup.di.EXERCISE_ID_KEY
 import com.davidhuynh.levelup.di.USER_ID_KEY
 import com.davidhuynh.levelup.di.WORKOUT_ID_KEY
 import com.davidhuynh.levelup.di.levelUpViewModelFactory
@@ -39,6 +40,8 @@ import com.davidhuynh.levelup.ui.leaderboard.LeaderboardScreen
 import com.davidhuynh.levelup.ui.leaderboard.LeaderboardViewModel
 import com.davidhuynh.levelup.ui.profile.ProfileScreen
 import com.davidhuynh.levelup.ui.profile.ProfileViewModel
+import com.davidhuynh.levelup.ui.progress.ExerciseRecordsScreen
+import com.davidhuynh.levelup.ui.progress.ExerciseRecordsViewModel
 import com.davidhuynh.levelup.ui.progress.ProgressScreen
 import com.davidhuynh.levelup.ui.progress.ProgressViewModel
 import com.davidhuynh.levelup.ui.workout.detail.WorkoutDetailScreen
@@ -156,7 +159,26 @@ private fun SignedInApp(
                     factory = factory,
                     extras = extrasFor(userId),
                 )
-                ProgressScreen(viewModel = viewModel)
+                ProgressScreen(
+                    viewModel = viewModel,
+                    onOpenExercise = { navController.navigate(Routes.exerciseRecords(it)) },
+                )
+            }
+
+            composable(
+                route = "${Routes.EXERCISE_RECORDS}/{exerciseId}",
+                arguments = listOf(navArgument("exerciseId") { type = NavType.StringType }),
+            ) { entry ->
+                val exerciseId = entry.arguments?.getString("exerciseId").orEmpty()
+                val viewModel: ExerciseRecordsViewModel = viewModel(
+                    key = "records-$exerciseId",
+                    factory = factory,
+                    extras = extrasFor(userId, exerciseId = exerciseId),
+                )
+                ExerciseRecordsScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() },
+                )
             }
 
             composable(Routes.LEADERBOARD) {
@@ -239,8 +261,12 @@ private fun SignedInApp(
     }
 }
 
-private fun extrasFor(userId: String, workoutId: String? = null): CreationExtras =
-    MutableCreationExtras().apply {
-        set(USER_ID_KEY, userId)
-        if (workoutId != null) set(WORKOUT_ID_KEY, workoutId)
-    }
+private fun extrasFor(
+    userId: String,
+    workoutId: String? = null,
+    exerciseId: String? = null,
+): CreationExtras = MutableCreationExtras().apply {
+    set(USER_ID_KEY, userId)
+    if (workoutId != null) set(WORKOUT_ID_KEY, workoutId)
+    if (exerciseId != null) set(EXERCISE_ID_KEY, exerciseId)
+}
