@@ -7,6 +7,7 @@ import com.davidhuynh.levelup.data.local.entity.FriendRequestEntity
 import com.davidhuynh.levelup.data.local.entity.FriendshipEntity
 import com.davidhuynh.levelup.data.local.relation.LeaderboardRow
 import com.davidhuynh.levelup.data.mapper.toDomain
+import com.davidhuynh.levelup.domain.logic.LeaderboardRanker
 import com.davidhuynh.levelup.domain.model.Friend
 import com.davidhuynh.levelup.domain.model.FriendRequest
 import com.davidhuynh.levelup.domain.model.FriendRequestStatus
@@ -28,7 +29,6 @@ import kotlinx.coroutines.flow.map
  */
 class LeaderboardRepositoryImpl(
     private val statsDao: UserStatsDao,
-    private val friendDao: FriendDao,
 ) : LeaderboardRepository {
 
     override fun observeGlobal(
@@ -36,9 +36,12 @@ class LeaderboardRepositoryImpl(
         metric: LeaderboardMetric,
         limit: Int,
     ): Flow<List<LeaderboardEntry>> {
+        // The ordering has to match the metric before the limit bites, or the board can
+        // leave out someone who leads on that metric but not on volume.
         val rows = when (metric) {
+            LeaderboardMetric.TOTAL_VOLUME -> statsDao.observeGlobalByVolume(limit)
             LeaderboardMetric.CURRENT_STREAK -> statsDao.observeGlobalByStreak(limit)
-            else -> statsDao.observeGlobalByVolume(limit)
+            LeaderboardMetric.PR_COUNT -> statsDao.observeGlobalByPrCount(limit)
         }
         return rows.map { list -> list.rank(metric, currentUserId) }
     }
@@ -54,32 +57,29 @@ class LeaderboardRepositoryImpl(
         statsDao.observeFriendsByVolume(currentUserId).map { list -> list.rank(metric, currentUserId) }
 
     /**
-     * Rank is assigned here rather than in SQL. A correlated subquery would do it, but it
-     * costs a scan per row for a number the list order already implies.
+     * Ranking happens in Kotlin rather than SQL. A correlated subquery would do it, but it
+     * costs a scan per row for a number the list order already implies — and the tie rules
+     * are easier to test as a pure function.
      */
     private fun List<LeaderboardRow>.rank(
         metric: LeaderboardMetric,
         currentUserId: String,
-    ): List<LeaderboardEntry> = sortedByDescending {
-        when (metric) {
-            LeaderboardMetric.TOTAL_VOLUME -> it.totalVolumeKg
-            LeaderboardMetric.CURRENT_STREAK -> it.currentStreakDays.toDouble()
-            LeaderboardMetric.PR_COUNT -> it.prCount.toDouble()
-        }
-    }.mapIndexed { index, row ->
-        LeaderboardEntry(
-            rank = index + 1,
-            userId = row.userId,
-            displayName = row.displayName,
-            avatarEmoji = row.avatarEmoji,
-            totalVolumeKg = row.totalVolumeKg,
-            totalWorkouts = row.totalWorkouts,
-            prCount = row.prCount,
-            currentStreakDays = row.currentStreakDays,
-            isCurrentUser = row.userId == currentUserId,
-            isDemo = row.isDemo,
-        )
-    }
+    ): List<LeaderboardEntry> = LeaderboardRanker.rank(
+        rows = map { row ->
+            LeaderboardRanker.Row(
+                userId = row.userId,
+                displayName = row.displayName,
+                avatarEmoji = row.avatarEmoji,
+                isDemo = row.isDemo,
+                totalVolumeKg = row.totalVolumeKg,
+                totalWorkouts = row.totalWorkouts,
+                prCount = row.prCount,
+                currentStreakDays = row.currentStreakDays,
+            )
+        },
+        metric = metric,
+        currentUserId = currentUserId,
+    )
 }
 
 class FriendRepositoryImpl(

@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.davidhuynh.levelup.data.local.LevelUpDatabase
 import com.davidhuynh.levelup.data.local.entity.UserEntity
+import com.davidhuynh.levelup.data.local.entity.UserStatsEntity
 import com.davidhuynh.levelup.data.repository.FriendRepositoryImpl
 import com.davidhuynh.levelup.domain.model.WeightUnit
 import com.davidhuynh.levelup.domain.security.SecureTokenGenerator
@@ -129,12 +130,47 @@ class FriendFlowTest {
         assertTrue(friends.observeFriends(jaylinId).first().isEmpty())
     }
 
+    /**
+     * The records board used to take the top rows by volume and then re-sort them, so a
+     * lifter with many records but little tonnage fell off the board entirely.
+     */
+    @Test
+    fun theRecordsBoardIsOrderedByRecordsBeforeTheLimitApplies() = runBlocking {
+        database.userDao().insert(user("user-heavy", "Heavy", "heavy@test.com"))
+        statsFor(davidId, volumeKg = 1_000.0, prCount = 50)
+        statsFor("user-heavy", volumeKg = 900_000.0, prCount = 1)
+        statsFor(jaylinId, volumeKg = 500_000.0, prCount = 2)
+
+        val topTwo = database.userStatsDao().observeGlobalByPrCount(limit = 2).first()
+
+        assertTrue("the record holder must be on the board", topTwo.any { it.userId == davidId })
+        assertEquals(davidId, topTwo.first().userId)
+    }
+
     @Test
     fun searchExcludesYourselfAndMatchesNameOrEmail() = runBlocking {
         assertEquals(listOf("Jaylin"), friends.searchUsers(davidId, "").map { it.displayName })
         assertEquals(1, friends.searchUsers(davidId, "jay").size)
         assertEquals(1, friends.searchUsers(davidId, "jaylin@test").size)
         assertTrue(friends.searchUsers(davidId, "david").isEmpty())
+    }
+
+    private suspend fun statsFor(userId: String, volumeKg: Double, prCount: Int) {
+        database.userStatsDao().upsert(
+            UserStatsEntity(
+                userId = userId,
+                totalVolumeKg = volumeKg,
+                totalWorkouts = 1,
+                totalSets = 1,
+                totalReps = 1,
+                prCount = prCount,
+                currentStreakDays = 0,
+                longestStreakDays = 0,
+                workoutsThisWeek = 0,
+                lastWorkoutLocalDate = null,
+                updatedAt = 0,
+            )
+        )
     }
 
     private fun user(id: String, name: String, email: String) = UserEntity(

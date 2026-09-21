@@ -108,6 +108,26 @@ interface UserStatsDao {
     )
     fun observeGlobalByStreak(limit: Int): Flow<List<LeaderboardRow>>
 
+    /**
+     * Each metric needs its own ordering before the limit is applied. Taking the top 50 by
+     * volume and re-sorting them by records would silently drop someone who has a pile of
+     * records without the tonnage to match.
+     */
+    @Query(
+        """
+        SELECT u.id AS userId, u.displayName AS displayName, u.avatarEmoji AS avatarEmoji,
+               u.isDemo AS isDemo, s.totalVolumeKg AS totalVolumeKg,
+               s.totalWorkouts AS totalWorkouts, s.prCount AS prCount,
+               s.currentStreakDays AS currentStreakDays
+        FROM user_stats s
+        JOIN users u ON u.id = s.userId
+        ORDER BY s.prCount DESC, s.totalVolumeKg DESC
+        LIMIT :limit
+        """
+    )
+    fun observeGlobalByPrCount(limit: Int): Flow<List<LeaderboardRow>>
+
+    /** No limit: a friends list is small, and everyone on it should be on the board. */
     @Query(
         """
         SELECT u.id AS userId, u.displayName AS displayName, u.avatarEmoji AS avatarEmoji,

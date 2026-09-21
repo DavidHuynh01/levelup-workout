@@ -119,8 +119,8 @@ they change with the calendar rather than with anything the user does.
 ## Tests
 
 ```powershell
-.\gradlew.bat :app:testDebugUnitTest          # 74 JVM tests, no emulator needed
-.\gradlew.bat :app:connectedDebugAndroidTest  # 17 Room tests, needs a device
+.\gradlew.bat :app:testDebugUnitTest          # 82 JVM tests, no emulator needed
+.\gradlew.bat :app:connectedDebugAndroidTest  # 18 Room tests, needs a device
 ```
 
 The JVM tests cover volume, 1RM estimation, record detection (including chain rebuilds after

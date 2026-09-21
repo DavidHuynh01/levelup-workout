@@ -89,7 +89,11 @@ class AppContainer(private val context: Context) {
             clock = clock,
             statsRecomputer = recomputer,
             onUserCreated = { newUserId ->
-                if (BuildConfig.DEBUG) demoSeeder.seedIncomingRequestsFor(newUserId)
+                // Wrapped: this is a debug convenience, and it must never be the reason a
+                // real signup fails.
+                if (BuildConfig.DEBUG) {
+                    runCatching { demoSeeder.seedIncomingRequestsFor(newUserId) }
+                }
             },
         )
     }
@@ -124,7 +128,7 @@ class AppContainer(private val context: Context) {
     }
 
     val leaderboardRepository: LeaderboardRepository by lazy {
-        LeaderboardRepositoryImpl(database.userStatsDao(), database.friendDao())
+        LeaderboardRepositoryImpl(database.userStatsDao())
     }
 
     /** Concrete: the Friends screen also observes outgoing requests, beyond the interface. */
