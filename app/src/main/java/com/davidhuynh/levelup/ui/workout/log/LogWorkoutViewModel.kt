@@ -2,8 +2,10 @@ package com.davidhuynh.levelup.ui.workout.log
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.davidhuynh.levelup.data.prefs.UserPreferencesStore
 import com.davidhuynh.levelup.data.repository.WorkoutDraft
 import com.davidhuynh.levelup.data.repository.WorkoutRepositoryImpl
+import com.davidhuynh.levelup.domain.logic.RestTimer
 import com.davidhuynh.levelup.domain.logic.VolumeCalculator
 import com.davidhuynh.levelup.domain.logic.WeightConverter
 import com.davidhuynh.levelup.domain.model.Exercise
@@ -15,9 +17,13 @@ import com.davidhuynh.levelup.domain.repository.ExerciseRepository
 import com.davidhuynh.levelup.domain.usecase.SaveWorkoutUseCase
 import com.davidhuynh.levelup.domain.util.AppClock
 import com.davidhuynh.levelup.domain.util.DataResult
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -39,8 +45,24 @@ data class ExerciseBlock(
     val sets: List<SetRow>,
 )
 
+/** A running rest period. Null when no rest is in progress. */
+data class RestState(
+    val startedAtMillis: Long,
+    val durationSeconds: Int,
+    val remainingSeconds: Int,
+) {
+    val isFinished: Boolean get() = remainingSeconds == 0
+    val label: String get() = RestTimer.format(remainingSeconds)
+
+    /** 1f at the start, 0f when it runs out, for the progress bar. */
+    val fraction: Float
+        get() = if (durationSeconds <= 0) 0f else remainingSeconds / durationSeconds.toFloat()
+}
+
 data class LogWorkoutUiState(
     val isEdit: Boolean = false,
+    val restSeconds: Int = RestTimer.DEFAULT_SECONDS,
+    val rest: RestState? = null,
     val name: String = "",
     val date: LocalDate = LocalDate.now(),
     val blocks: List<ExerciseBlock> = emptyList(),
@@ -93,6 +115,7 @@ class LogWorkoutViewModel(
     private val workoutRepository: WorkoutRepositoryImpl,
     private val saveWorkout: SaveWorkoutUseCase,
     private val authRepository: AuthRepository,
+    private val preferences: UserPreferencesStore,
     private val clock: AppClock,
 ) : ViewModel() {
 
@@ -105,11 +128,13 @@ class LogWorkoutViewModel(
         viewModelScope.launch {
             val unit = authRepository.getUser(userId)?.weightUnit ?: WeightUnit.LB
             val catalogue = exerciseRepository.search(userId, "")
+            val rememberedRest = preferences.restSeconds.first()
             _state.update {
                 it.copy(
                     catalogue = catalogue,
                     weightUnit = unit,
                     date = clock.today(),
+                    restSeconds = rememberedRest,
                     isLoading = false,
                 )
             }
@@ -300,4 +325,76 @@ class LogWorkoutViewModel(
     fun dismissAwards() = _state.update { it.copy(awards = emptyList()) }
 
     fun clearError() = _state.update { it.copy(error = null) }
+
+    // --- Rest timer -------------------------------------------------------------------
+
+    private var tickJob: Job? = null
+
+    fun startRest(seconds: Int = _state.value.restSeconds) {
+        val now = clock.nowMillis()
+        _state.update {
+            it.copy(
+                restSeconds = seconds,
+                rest = RestState(
+                    startedAtMillis = now,
+                    durationSeconds = seconds,
+                    remainingSeconds = seconds,
+                ),
+            )
+        }
+        viewModelScope.launch { preferences.setRestSeconds(seconds) }
+        restartTicking()
+    }
+
+    /** Adds 30 seconds without resetting the clock, so elapsed rest still counts. */
+    fun extendRest() {
+        val rest = _state.value.rest ?: return
+        val extended = RestTimer.extend(rest.durationSeconds)
+        _state.update {
+            it.copy(
+                rest = rest.copy(
+                    durationSeconds = extended,
+                    remainingSeconds = RestTimer.remainingSeconds(
+                        rest.startedAtMillis,
+                        extended,
+                        clock.nowMillis(),
+                    ),
+                ),
+            )
+        }
+        restartTicking()
+    }
+
+    fun stopRest() {
+        tickJob?.cancel()
+        tickJob = null
+        _state.update { it.copy(rest = null) }
+    }
+
+    /**
+     * Ticks once a second purely to refresh the display. The remaining time is always
+     * recomputed from the start instant, so a missed tick — or the app being away
+     * entirely — cannot make the timer drift.
+     */
+    private fun restartTicking() {
+        tickJob?.cancel()
+        tickJob = viewModelScope.launch {
+            while (isActive) {
+                val rest = _state.value.rest ?: break
+                val remaining = RestTimer.remainingSeconds(
+                    rest.startedAtMillis,
+                    rest.durationSeconds,
+                    clock.nowMillis(),
+                )
+                _state.update { it.copy(rest = rest.copy(remainingSeconds = remaining)) }
+                if (remaining == 0) break
+                delay(1_000)
+            }
+        }
+    }
+
+    override fun onCleared() {
+        tickJob?.cancel()
+        super.onCleared()
+    }
 }

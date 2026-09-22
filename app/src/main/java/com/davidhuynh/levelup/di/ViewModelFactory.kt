@@ -58,6 +58,7 @@ fun levelUpViewModelFactory(container: AppContainer): ViewModelProvider.Factory 
             workoutRepository = container.workoutRepository,
             saveWorkout = container.saveWorkoutUseCase,
             authRepository = container.authRepository,
+            preferences = container.userPreferences,
             clock = container.clock,
         )
     }

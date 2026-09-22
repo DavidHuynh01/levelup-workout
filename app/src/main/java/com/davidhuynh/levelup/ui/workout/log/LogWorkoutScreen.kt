@@ -25,6 +25,7 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
@@ -45,6 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.davidhuynh.levelup.domain.logic.RestTimer
 import com.davidhuynh.levelup.domain.logic.WeightConverter
 import com.davidhuynh.levelup.domain.model.Exercise
 import com.davidhuynh.levelup.domain.model.PrAward
@@ -109,6 +111,16 @@ fun LogWorkoutScreen(
                         color = AccentLime,
                     )
                 }
+                RestBar(
+                    rest = state.rest,
+                    restSeconds = state.restSeconds,
+                    onStart = viewModel::startRest,
+                    onExtend = viewModel::extendRest,
+                    onStop = viewModel::stopRest,
+                )
+
+                Spacer(Modifier.height(Spacing.sm))
+
                 Button(
                     onClick = viewModel::save,
                     enabled = state.canSave,
@@ -453,3 +465,76 @@ private fun awardDetail(award: PrAward, unit: WeightUnit): String {
 
 /** Custom exercises default to Other; the user can refine it later from the catalogue. */
 private fun muscleGroupGuess() = com.davidhuynh.levelup.domain.model.MuscleGroup.OTHER
+
+/**
+ * Rest between sets.
+ *
+ * Idle, it offers the remembered rest length plus the other presets; running, it becomes a
+ * countdown with a draining bar. Deliberately in-app only: a background timer that fires
+ * notifications would need a foreground service and a notification permission, which is a
+ * lot of machinery for a screen you are already looking at between sets.
+ */
+@Composable
+private fun RestBar(
+    rest: RestState?,
+    restSeconds: Int,
+    onStart: (Int) -> Unit,
+    onExtend: () -> Unit,
+    onStop: () -> Unit,
+) {
+    if (rest == null) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            OutlinedButton(
+                onClick = { onStart(restSeconds) },
+                modifier = Modifier.weight(1f),
+            ) {
+                Text("Rest ${RestTimer.format(restSeconds)}")
+            }
+
+            RestTimer.PRESETS_SECONDS
+                .filter { it != restSeconds }
+                .forEach { preset ->
+                    TextButton(onClick = { onStart(preset) }) {
+                        Text(RestTimer.format(preset))
+                    }
+                }
+        }
+        return
+    }
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = if (rest.isFinished) "Rest over" else "Rest ${rest.label}",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = if (rest.isFinished) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
+            )
+            Row {
+                TextButton(onClick = onExtend) { Text("+30s") }
+                TextButton(onClick = onStop) {
+                    Text(if (rest.isFinished) "Done" else "Skip")
+                }
+            }
+        }
+
+        LinearProgressIndicator(
+            progress = { rest.fraction },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = Spacing.xs),
+        )
+    }
+}

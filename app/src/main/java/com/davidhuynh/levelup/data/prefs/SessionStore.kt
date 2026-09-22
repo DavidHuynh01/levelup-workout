@@ -4,9 +4,11 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.davidhuynh.levelup.domain.logic.RestTimer
 import com.davidhuynh.levelup.domain.model.Session
 import com.davidhuynh.levelup.domain.model.WeightUnit
 import com.davidhuynh.levelup.domain.util.AppClock
@@ -95,7 +97,17 @@ class UserPreferencesStore(private val context: Context) {
         context.settingsDataStore.edit { it[KEY_WEIGHT_UNIT] = unit.name }
     }
 
+    /** Remembered between sessions: most people rest the same length every workout. */
+    val restSeconds: Flow<Int> = context.settingsDataStore.data.map { prefs ->
+        prefs[KEY_REST_SECONDS] ?: RestTimer.DEFAULT_SECONDS
+    }
+
+    suspend fun setRestSeconds(seconds: Int) {
+        context.settingsDataStore.edit { it[KEY_REST_SECONDS] = seconds }
+    }
+
     private companion object {
         val KEY_WEIGHT_UNIT = stringPreferencesKey("weight_unit")
+        val KEY_REST_SECONDS = intPreferencesKey("rest_seconds")
     }
 }
