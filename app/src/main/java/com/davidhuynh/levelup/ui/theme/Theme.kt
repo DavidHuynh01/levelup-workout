@@ -32,6 +32,20 @@ private val Crimson = Color(0xFFE5484D)
 val StreakOrange = Flame
 val AccentLime = Lime
 
+/**
+ * Chart marks get their own greens rather than reusing the UI accent.
+ *
+ * Both steps were checked with the palette validator against their own surface: the UI
+ * lime sits at OKLCH L 0.83, too light to read as a data mark on the dark surface, and
+ * the light-mode accent lands just under 3:1 contrast. These two pass on both counts.
+ */
+private val ChartGreenLight = Color(0xFF2E9749)
+private val ChartGreenDark = Color(0xFF3FA857)
+
+val ChartLine: Color
+    @Composable
+    get() = if (isSystemInDarkTheme()) ChartGreenDark else ChartGreenLight
+
 private val DarkScheme = darkColorScheme(
     primary = Lime,
     onPrimary = Ink,

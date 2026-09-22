@@ -87,6 +87,8 @@ data class LogWorkoutUiState(
 class LogWorkoutViewModel(
     private val userId: String,
     private val workoutId: String?,
+    /** A past workout to copy the exercises and sets from, when starting a repeat. */
+    private val repeatOfWorkoutId: String? = null,
     private val exerciseRepository: ExerciseRepository,
     private val workoutRepository: WorkoutRepositoryImpl,
     private val saveWorkout: SaveWorkoutUseCase,
@@ -111,16 +113,25 @@ class LogWorkoutViewModel(
                     isLoading = false,
                 )
             }
-            if (workoutId != null) loadExisting(workoutId, unit)
+            when {
+                workoutId != null -> loadWorkoutInto(workoutId, unit, keepDate = true)
+                repeatOfWorkoutId != null -> loadWorkoutInto(repeatOfWorkoutId, unit, keepDate = false)
+            }
         }
     }
 
-    private suspend fun loadExisting(id: String, unit: WeightUnit) {
+    /**
+     * Fills the form from an existing workout.
+     *
+     * Editing keeps the original date; repeating does not — a repeat is a new session
+     * today that happens to start from an old one's exercises and numbers.
+     */
+    private suspend fun loadWorkoutInto(id: String, unit: WeightUnit, keepDate: Boolean) {
         val workout = workoutRepository.getWorkout(id) ?: return
         _state.update { current ->
             current.copy(
                 name = workout.name,
-                date = workout.localDate,
+                date = if (keepDate) workout.localDate else current.date,
                 blocks = workout.exercises.map { exercise ->
                     ExerciseBlock(
                         key = nextKey++,

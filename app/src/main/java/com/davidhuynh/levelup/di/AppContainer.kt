@@ -115,7 +115,7 @@ class AppContainer(private val context: Context) {
     }
 
     val personalRecordRepository: PersonalRecordRepository by lazy {
-        PersonalRecordRepositoryImpl(database.personalRecordDao())
+        PersonalRecordRepositoryImpl(database.personalRecordDao(), database.exerciseSetDao())
     }
 
     val statsRepository: StatsRepository by lazy {

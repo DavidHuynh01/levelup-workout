@@ -26,11 +26,15 @@ All six phases are built and running on a device.
   reps and weight with a running volume total as you type. Warmup sets are marked and
   excluded from totals and records.
 - **History** — every session grouped by month, with per-month volume, tap through for the
-  full set breakdown, and edit or delete any past workout.
+  full set breakdown, and edit, delete or repeat any past workout. Repeating opens the log
+  screen already filled in with the same exercises and weights, dated today.
 - **Personal records** — three per exercise, detected automatically: heaviest weight, best
   Epley-estimated 1RM, and best single-session volume. Breaking one raises a dialog naming
   what you beat and by how much, and each exercise keeps a full record timeline including
   the records it has since beaten.
+- **Progress chart** — estimated 1RM per session for an exercise, plotted from the sessions
+  themselves rather than from the record chain, so plateaus and bad weeks are visible
+  instead of being smoothed into a staircase.
 - **Profile** — lifetime stats, an editable display name, and an emoji avatar that shows up
   on the leaderboard.
 - **Streaks and consistency** — a running day streak with a one-day grace period, a longest
@@ -119,13 +123,14 @@ they change with the calendar rather than with anything the user does.
 ## Tests
 
 ```powershell
-.\gradlew.bat :app:testDebugUnitTest          # 82 JVM tests, no emulator needed
+.\gradlew.bat :app:testDebugUnitTest          # 90 JVM tests, no emulator needed
 .\gradlew.bat :app:connectedDebugAndroidTest  # 18 Room tests, needs a device
 ```
 
 The JVM tests cover volume, 1RM estimation, record detection (including chain rebuilds after
 a delete and after a back-dated entry), streaks across month ends and daylight saving,
-password policy and hashing, and unit conversion. The instrumented tests cover the same
+password policy and hashing, leaderboard ranking and ties, progress series, and unit
+conversion. The instrumented tests cover the same
 recompute paths against a real database, foreign-key cascade behaviour, and the friend
 request flow.
 

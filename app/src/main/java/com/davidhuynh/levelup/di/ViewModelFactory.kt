@@ -53,6 +53,7 @@ fun levelUpViewModelFactory(container: AppContainer): ViewModelProvider.Factory 
         LogWorkoutViewModel(
             userId = requireUserId(),
             workoutId = get(WORKOUT_ID_KEY),
+            repeatOfWorkoutId = get(REPEAT_OF_KEY),
             exerciseRepository = container.exerciseRepository,
             workoutRepository = container.workoutRepository,
             saveWorkout = container.saveWorkoutUseCase,
@@ -120,6 +121,7 @@ fun levelUpViewModelFactory(container: AppContainer): ViewModelProvider.Factory 
 val USER_ID_KEY = object : CreationExtras.Key<String> {}
 val WORKOUT_ID_KEY = object : CreationExtras.Key<String> {}
 val EXERCISE_ID_KEY = object : CreationExtras.Key<String> {}
+val REPEAT_OF_KEY = object : CreationExtras.Key<String> {}
 
 private fun CreationExtras.requireUserId(): String =
     requireNotNull(get(USER_ID_KEY)) { "userId is required for this screen" }

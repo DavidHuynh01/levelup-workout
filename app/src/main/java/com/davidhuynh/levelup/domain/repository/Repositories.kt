@@ -1,5 +1,6 @@
 package com.davidhuynh.levelup.domain.repository
 
+import com.davidhuynh.levelup.domain.logic.ProgressPoint
 import com.davidhuynh.levelup.domain.model.Exercise
 import com.davidhuynh.levelup.domain.model.Friend
 import com.davidhuynh.levelup.domain.model.FriendRequest
@@ -83,6 +84,9 @@ interface PersonalRecordRepository {
     fun observeRecordHistory(userId: String, exerciseId: String): Flow<List<PersonalRecord>>
 
     suspend fun currentRecords(userId: String): List<PersonalRecord>
+
+    /** Best effort per session on one exercise, for the progress chart. */
+    fun observeProgress(userId: String, exerciseId: String): Flow<List<ProgressPoint>>
 }
 
 interface StatsRepository {

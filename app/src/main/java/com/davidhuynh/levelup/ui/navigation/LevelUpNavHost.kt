@@ -20,6 +20,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.davidhuynh.levelup.di.AppContainer
 import com.davidhuynh.levelup.di.EXERCISE_ID_KEY
+import com.davidhuynh.levelup.di.REPEAT_OF_KEY
 import com.davidhuynh.levelup.di.USER_ID_KEY
 import com.davidhuynh.levelup.di.WORKOUT_ID_KEY
 import com.davidhuynh.levelup.di.levelUpViewModelFactory
@@ -217,9 +218,14 @@ private fun SignedInApp(
             }
 
             composable(
-                route = "${Routes.LOG_WORKOUT}?workoutId={workoutId}",
+                route = "${Routes.LOG_WORKOUT}?workoutId={workoutId}&repeatOf={repeatOf}",
                 arguments = listOf(
                     navArgument("workoutId") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                    navArgument("repeatOf") {
                         type = NavType.StringType
                         nullable = true
                         defaultValue = null
@@ -227,12 +233,13 @@ private fun SignedInApp(
                 ),
             ) { entry ->
                 val workoutId = entry.arguments?.getString("workoutId")
-                // Keyed by workoutId so editing two workouts in a row does not reuse the
-                // first one's draft.
+                val repeatOf = entry.arguments?.getString("repeatOf")
+                // Keyed by the source workout so editing or repeating two in a row does
+                // not reuse the first one's draft.
                 val viewModel: LogWorkoutViewModel = viewModel(
-                    key = "log-${workoutId ?: "new"}",
+                    key = "log-${workoutId ?: repeatOf?.let { "repeat-$it" } ?: "new"}",
                     factory = factory,
-                    extras = extrasFor(userId, workoutId),
+                    extras = extrasFor(userId, workoutId, repeatOfWorkoutId = repeatOf),
                 )
                 LogWorkoutScreen(
                     viewModel = viewModel,
@@ -255,6 +262,7 @@ private fun SignedInApp(
                     viewModel = viewModel,
                     onBack = { navController.popBackStack() },
                     onEdit = { navController.navigate(Routes.logWorkout(it)) },
+                    onRepeat = { navController.navigate(Routes.repeatWorkout(it)) },
                 )
             }
         }
@@ -265,8 +273,10 @@ private fun extrasFor(
     userId: String,
     workoutId: String? = null,
     exerciseId: String? = null,
+    repeatOfWorkoutId: String? = null,
 ): CreationExtras = MutableCreationExtras().apply {
     set(USER_ID_KEY, userId)
     if (workoutId != null) set(WORKOUT_ID_KEY, workoutId)
     if (exerciseId != null) set(EXERCISE_ID_KEY, exerciseId)
+    if (repeatOfWorkoutId != null) set(REPEAT_OF_KEY, repeatOfWorkoutId)
 }

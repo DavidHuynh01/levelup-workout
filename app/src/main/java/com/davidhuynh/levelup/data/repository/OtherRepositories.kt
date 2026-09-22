@@ -1,13 +1,17 @@
 package com.davidhuynh.levelup.data.repository
 
 import com.davidhuynh.levelup.data.local.dao.ExerciseDao
+import com.davidhuynh.levelup.data.local.dao.ExerciseSetDao
 import com.davidhuynh.levelup.data.local.dao.PersonalRecordDao
 import com.davidhuynh.levelup.data.local.dao.UserStatsDao
 import com.davidhuynh.levelup.data.local.dao.WorkoutDao
 import com.davidhuynh.levelup.data.local.entity.ExerciseEntity
 import com.davidhuynh.levelup.data.mapper.toDomain
 import com.davidhuynh.levelup.data.mapper.toLocalDate
+import com.davidhuynh.levelup.data.mapper.toPrInput
 import com.davidhuynh.levelup.domain.logic.ConsistencyCalculator
+import com.davidhuynh.levelup.domain.logic.ProgressPoint
+import com.davidhuynh.levelup.domain.logic.ProgressSeries
 import com.davidhuynh.levelup.domain.logic.StreakCalculator
 import com.davidhuynh.levelup.domain.model.Exercise
 import com.davidhuynh.levelup.domain.model.MuscleGroup
@@ -70,7 +74,12 @@ class ExerciseRepositoryImpl(
 
 class PersonalRecordRepositoryImpl(
     private val recordDao: PersonalRecordDao,
+    private val setDao: ExerciseSetDao,
 ) : PersonalRecordRepository {
+
+    override fun observeProgress(userId: String, exerciseId: String): Flow<List<ProgressPoint>> =
+        setDao.observeWorkingSetsForExercise(userId, exerciseId)
+            .map { sets -> ProgressSeries.sessionBests(sets.map { it.toPrInput() }) }
 
     override fun observeCurrentRecords(userId: String): Flow<List<PersonalRecord>> =
         recordDao.observeCurrent(userId).map { rows -> rows.map { it.toDomain() } }

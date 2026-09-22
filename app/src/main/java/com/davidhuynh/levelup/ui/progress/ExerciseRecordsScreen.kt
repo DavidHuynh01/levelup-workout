@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import com.davidhuynh.levelup.domain.logic.ProgressPoint
 import com.davidhuynh.levelup.domain.logic.WeightConverter
 import com.davidhuynh.levelup.domain.model.PersonalRecord
 import com.davidhuynh.levelup.domain.model.PrType
@@ -44,6 +45,7 @@ import java.time.format.DateTimeFormatter
 data class ExerciseRecordsUiState(
     val exerciseName: String = "",
     val records: List<PersonalRecord> = emptyList(),
+    val progress: List<ProgressPoint> = emptyList(),
     val weightUnit: WeightUnit = WeightUnit.LB,
     val isLoading: Boolean = true,
 ) {
@@ -65,11 +67,13 @@ class ExerciseRecordsViewModel(
 
     val state: StateFlow<ExerciseRecordsUiState> = combine(
         recordRepository.observeRecordHistory(userId, exerciseId),
+        recordRepository.observeProgress(userId, exerciseId),
         authRepository.observeUser(userId),
-    ) { records, user ->
+    ) { records, progress, user ->
         ExerciseRecordsUiState(
             exerciseName = records.firstOrNull()?.exerciseName.orEmpty(),
             records = records,
+            progress = progress,
             weightUnit = user?.weightUnit ?: WeightUnit.LB,
             isLoading = false,
         )
@@ -117,6 +121,10 @@ fun ExerciseRecordsScreen(
                     .padding(padding)
                     .padding(horizontal = Spacing.md),
             ) {
+                item {
+                    ProgressChart(points = state.progress, unit = state.weightUnit)
+                }
+
                 state.byType.forEach { (type, records) ->
                     item(key = "header-${type.name}") {
                         Text(

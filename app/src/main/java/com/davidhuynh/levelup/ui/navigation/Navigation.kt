@@ -21,10 +21,12 @@ object Routes {
     const val PROGRESS = "progress"
     const val PROFILE = "profile"
 
-    /** One screen serves both logging a new workout and editing an existing one. */
+    /** One screen serves logging, editing, and repeating a past workout. */
     const val LOG_WORKOUT = "workout/log"
     fun logWorkout(workoutId: String? = null): String =
         if (workoutId == null) LOG_WORKOUT else "$LOG_WORKOUT?workoutId=$workoutId"
+
+    fun repeatWorkout(workoutId: String): String = "$LOG_WORKOUT?repeatOf=$workoutId"
 
     const val WORKOUT_DETAIL = "workout/detail"
     fun workoutDetail(workoutId: String): String = "$WORKOUT_DETAIL/$workoutId"

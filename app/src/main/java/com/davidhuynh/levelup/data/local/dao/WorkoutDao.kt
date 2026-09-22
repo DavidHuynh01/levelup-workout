@@ -162,6 +162,16 @@ interface ExerciseSetDao {
     )
     suspend fun workingSetsForExercise(userId: String, exerciseId: String): List<ExerciseSetEntity>
 
+    /** Same rows as above, observed, for the progress chart. */
+    @Query(
+        """
+        SELECT * FROM exercise_sets
+        WHERE userId = :userId AND exerciseId = :exerciseId AND isWarmup = 0 AND reps > 0
+        ORDER BY completedAt ASC
+        """
+    )
+    fun observeWorkingSetsForExercise(userId: String, exerciseId: String): Flow<List<ExerciseSetEntity>>
+
     @Query("SELECT DISTINCT exerciseId FROM exercise_sets WHERE workoutId = :workoutId")
     suspend fun exerciseIdsInWorkout(workoutId: String): List<String>
 

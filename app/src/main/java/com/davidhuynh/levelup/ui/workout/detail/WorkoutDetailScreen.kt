@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -27,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
@@ -101,6 +103,7 @@ fun WorkoutDetailScreen(
     viewModel: WorkoutDetailViewModel,
     onBack: () -> Unit,
     onEdit: (String) -> Unit,
+    onRepeat: (String) -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val deleted by viewModel.deleted.collectAsStateWithLifecycle()
@@ -155,6 +158,17 @@ fun WorkoutDetailScreen(
                 }
 
                 Spacer(Modifier.height(Spacing.md))
+
+                // Most sessions repeat a previous one, so this is the primary action here:
+                // it opens the log screen already filled in, dated today.
+                Button(
+                    onClick = { onRepeat(workout.id) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                ) { Text("Repeat this workout") }
+
+                Spacer(Modifier.height(Spacing.sm))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
