@@ -4,6 +4,7 @@ import android.content.Context
 import com.davidhuynh.levelup.BuildConfig
 import com.davidhuynh.levelup.data.local.LevelUpDatabase
 import com.davidhuynh.levelup.data.local.seed.DemoDataSeeder
+import com.davidhuynh.levelup.data.export.WorkoutExporter
 import com.davidhuynh.levelup.data.local.seed.ExerciseCatalogSeed
 import com.davidhuynh.levelup.data.prefs.DataStoreSessionStore
 import com.davidhuynh.levelup.data.prefs.SessionStore
@@ -134,6 +135,10 @@ class AppContainer(private val context: Context) {
     /** Concrete: the Friends screen also observes outgoing requests, beyond the interface. */
     val friendRepository: FriendRepositoryImpl by lazy {
         FriendRepositoryImpl(database.friendDao(), database.userDao(), tokens, clock)
+    }
+
+    val workoutExporter: WorkoutExporter by lazy {
+        WorkoutExporter(context, workoutRepository, authRepository, clock)
     }
 
     val saveWorkoutUseCase: SaveWorkoutUseCase by lazy { SaveWorkoutUseCase(workoutRepository) }

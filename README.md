@@ -47,6 +47,9 @@ All six phases are built and running on a device.
 - **Friends** — search lifters, send requests, accept or decline, with a count badge on the
   Profile tab. If two people add each other at once it resolves to a friendship rather than
   a pair of stuck requests.
+- **CSV export** — Profile exports the whole history as CSV, one row per set, and hands it
+  to the share sheet. Free-text names are quoted per RFC 4180, so a workout called
+  `Push, heavy` cannot shift the columns.
 - **Units** — weights are stored in kilograms and displayed in pounds or kilograms; the
   toggle in Profile never rewrites stored data.
 
@@ -126,13 +129,13 @@ they change with the calendar rather than with anything the user does.
 ## Tests
 
 ```powershell
-.\gradlew.bat :app:testDebugUnitTest          # 99 JVM tests, no emulator needed
+.\gradlew.bat :app:testDebugUnitTest          # 106 JVM tests, no emulator needed
 .\gradlew.bat :app:connectedDebugAndroidTest  # 18 Room tests, needs a device
 ```
 
 The JVM tests cover volume, 1RM estimation, record detection (including chain rebuilds after
 a delete and after a back-dated entry), streaks across month ends and daylight saving,
-password policy and hashing, leaderboard ranking and ties, progress series, rest timing, and unit conversion. The instrumented tests cover the same
+password policy and hashing, leaderboard ranking and ties, progress series, rest timing, CSV formatting and quoting, and unit conversion. The instrumented tests cover the same
 recompute paths against a real database, foreign-key cascade behaviour, and the friend
 request flow.
 

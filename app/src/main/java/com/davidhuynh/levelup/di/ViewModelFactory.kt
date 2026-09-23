@@ -111,6 +111,7 @@ fun levelUpViewModelFactory(container: AppContainer): ViewModelProvider.Factory 
             userId = requireUserId(),
             authRepository = container.authRepository,
             statsRepository = container.statsRepository,
+            exporter = container.workoutExporter,
         )
     }
 }

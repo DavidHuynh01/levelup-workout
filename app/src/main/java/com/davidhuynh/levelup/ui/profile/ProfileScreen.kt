@@ -1,5 +1,6 @@
 package com.davidhuynh.levelup.ui.profile
 
+import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,17 +25,20 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import com.davidhuynh.levelup.data.export.WorkoutExporter
 import com.davidhuynh.levelup.domain.logic.WeightConverter
 import com.davidhuynh.levelup.domain.model.User
 import com.davidhuynh.levelup.domain.model.UserStats
@@ -68,6 +72,7 @@ class ProfileViewModel(
     private val userId: String,
     private val authRepository: AuthRepository,
     statsRepository: StatsRepository,
+    private val exporter: WorkoutExporter,
 ) : ViewModel() {
 
     val state: StateFlow<ProfileUiState> = combine(
@@ -98,6 +103,32 @@ class ProfileViewModel(
     }
 
     fun clearEditError() { _editError.value = null }
+
+    private val _export = MutableStateFlow<ExportState>(ExportState.Idle)
+    val export: StateFlow<ExportState> = _export.asStateFlow()
+
+    fun exportCsv() {
+        if (_export.value is ExportState.Working) return
+        _export.value = ExportState.Working
+        viewModelScope.launch {
+            _export.value = when (val result = exporter.exportCsv(userId)) {
+                is DataResult.Success -> ExportState.Ready(result.value)
+                is DataResult.Failure -> ExportState.Failed(result.message)
+            }
+        }
+    }
+
+    /** Called once the share sheet has been launched, so it does not fire again. */
+    fun clearExport() { _export.value = ExportState.Idle }
+
+    fun shareIntent(export: WorkoutExporter.Export) = exporter.shareIntent(export)
+}
+
+sealed interface ExportState {
+    data object Idle : ExportState
+    data object Working : ExportState
+    data class Ready(val export: WorkoutExporter.Export) : ExportState
+    data class Failed(val message: String) : ExportState
 }
 
 /**
@@ -122,6 +153,8 @@ fun ProfileScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val editError by viewModel.editError.collectAsStateWithLifecycle()
+    val exportState by viewModel.export.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     val user = state.user
     val unit = user?.weightUnit ?: WeightUnit.LB
     var isEditing by remember { mutableStateOf(false) }
@@ -129,6 +162,15 @@ fun ProfileScreen(
     if (state.isLoading) {
         LoadingScreen()
         return
+    }
+
+    LaunchedEffect(exportState) {
+        val ready = exportState as? ExportState.Ready ?: return@LaunchedEffect
+        // Sharing is a side effect, so it belongs in an effect rather than in composition.
+        context.startActivity(
+            Intent.createChooser(viewModel.shareIntent(ready.export), "Share your workouts")
+        )
+        viewModel.clearExport()
     }
 
     Column(
@@ -213,6 +255,38 @@ fun ProfileScreen(
                             .atZone(ZoneId.systemDefault())
                             .format(joinFormat),
                     )
+                }
+            }
+        }
+
+        SectionHeader("Your data")
+
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+            Column(modifier = Modifier.padding(Spacing.md)) {
+                Text("Export as CSV", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = "One row per set, ready for a spreadsheet.",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                (exportState as? ExportState.Failed)?.let { failed ->
+                    Text(
+                        text = failed.message,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(top = Spacing.xs),
+                    )
+                }
+
+                OutlinedButton(
+                    onClick = viewModel::exportCsv,
+                    enabled = exportState !is ExportState.Working,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = Spacing.sm),
+                ) {
+                    Text(if (exportState is ExportState.Working) "Preparing…" else "Export and share")
                 }
             }
         }
