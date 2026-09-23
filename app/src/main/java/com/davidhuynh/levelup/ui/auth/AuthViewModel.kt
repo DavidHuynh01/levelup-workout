@@ -16,13 +16,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/**
- * Owns "is anybody signed in", for the whole app.
- *
- * The state starts as Loading and only becomes Authenticated or Unauthenticated once the
- * stored session has actually been read. The navigation graph waits for that, which is why
- * a signed-in user never sees the login screen flash on a cold start.
- */
 class AuthViewModel(
     private val authRepository: AuthRepository,
 ) : ViewModel() {
@@ -49,7 +42,7 @@ class AuthViewModel(
                 _state.value = if (session == null) {
                     AuthState.Unauthenticated
                 } else {
-                    // Sliding expiry: opening the app counts as activity.
+
                     authRepository.refreshSession()
                     AuthState.Authenticated(session.userId)
                 }

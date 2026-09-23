@@ -54,8 +54,7 @@ abstract class LevelUpDatabase : RoomDatabase() {
             var instance: LevelUpDatabase? = null
             val callback = object : RoomDatabase.Callback() {
                 override fun onOpen(db: SupportSQLiteDatabase) {
-                    // Seeding needs the DAOs, so it runs against the built instance rather
-                    // than raw SQL here.
+
                     instance?.let(onOpened)
                 }
             }

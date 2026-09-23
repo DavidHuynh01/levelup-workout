@@ -22,7 +22,6 @@ import org.junit.runner.RunWith
 import java.time.Instant
 import java.time.ZoneId
 
-/** Sending, accepting and declining friend requests against a real database. */
 @RunWith(AndroidJUnit4::class)
 class FriendFlowTest {
 
@@ -68,7 +67,6 @@ class FriendFlowTest {
 
         friends.acceptRequest(incoming.single().id)
 
-        // Both directions, so each side's list is a single indexed lookup.
         assertEquals(1, friends.observeFriends(davidId).first().size)
         assertEquals(1, friends.observeFriends(jaylinId).first().size)
         assertEquals(0, friends.observePendingRequestCount(jaylinId).first())
@@ -94,7 +92,6 @@ class FriendFlowTest {
         assertEquals(1, friends.observePendingRequestCount(jaylinId).first())
     }
 
-    /** Both tapping add at once should end in a friendship, not two mirrored requests. */
     @Test
     fun addingSomeoneWhoAlreadyAskedYouAcceptsTheirRequest() = runBlocking {
         friends.sendRequest(jaylinId, davidId)
@@ -130,10 +127,6 @@ class FriendFlowTest {
         assertTrue(friends.observeFriends(jaylinId).first().isEmpty())
     }
 
-    /**
-     * The records board used to take the top rows by volume and then re-sort them, so a
-     * lifter with many records but little tonnage fell off the board entirely.
-     */
     @Test
     fun theRecordsBoardIsOrderedByRecordsBeforeTheLimitApplies() = runBlocking {
         database.userDao().insert(user("user-heavy", "Heavy", "heavy@test.com"))

@@ -21,7 +21,6 @@ object Routes {
     const val PROGRESS = "progress"
     const val PROFILE = "profile"
 
-    /** One screen serves logging, editing, and repeating a past workout. */
     const val LOG_WORKOUT = "workout/log"
     fun logWorkout(workoutId: String? = null): String =
         if (workoutId == null) LOG_WORKOUT else "$LOG_WORKOUT?workoutId=$workoutId"
@@ -34,7 +33,6 @@ object Routes {
     const val EXERCISE_RECORDS = "records/exercise"
     fun exerciseRecords(exerciseId: String): String = "$EXERCISE_RECORDS/$exerciseId"
 
-    // Phase 4 and 5.
     const val LEADERBOARD = "leaderboard"
     const val FRIENDS = "friends"
 }
@@ -63,8 +61,7 @@ fun LevelUpBottomBar(
                 onClick = {
                     if (!selected) {
                         navController.navigate(tab.route) {
-                            // Tabs are siblings, not a stack: going Home then History then Home
-                            // should not leave three entries behind.
+
                             popUpTo(navController.graph.findStartDestination().id) {
                                 saveState = true
                             }

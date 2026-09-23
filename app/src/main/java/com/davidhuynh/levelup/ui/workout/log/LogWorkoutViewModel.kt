@@ -28,7 +28,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
-/** One row in the set editor. Kept as text so a half-typed "12." does not fight the user. */
 data class SetRow(
     val key: Long,
     val reps: String = "",
@@ -45,7 +44,6 @@ data class ExerciseBlock(
     val sets: List<SetRow>,
 )
 
-/** A running rest period. Null when no rest is in progress. */
 data class RestState(
     val startedAtMillis: Long,
     val durationSeconds: Int,
@@ -54,7 +52,6 @@ data class RestState(
     val isFinished: Boolean get() = remainingSeconds == 0
     val label: String get() = RestTimer.format(remainingSeconds)
 
-    /** 1f at the start, 0f when it runs out, for the progress bar. */
     val fraction: Float
         get() = if (durationSeconds <= 0) 0f else remainingSeconds / durationSeconds.toFloat()
 }
@@ -76,13 +73,7 @@ data class LogWorkoutUiState(
     val awards: List<PrAward> = emptyList(),
     val savedWorkoutId: String? = null,
 ) {
-    /**
-     * Running total, updated as the user types.
-     *
-     * The typed numbers are in the display unit, so they are converted to kilograms before
-     * formatting — otherwise pounds would be formatted as though they were kilograms and
-     * the total would read about 2.2x too high.
-     */
+
     val totalVolumeDisplay: String
         get() {
             val kg = blocks.sumOf { block ->
@@ -109,7 +100,7 @@ data class LogWorkoutUiState(
 class LogWorkoutViewModel(
     private val userId: String,
     private val workoutId: String?,
-    /** A past workout to copy the exercises and sets from, when starting a repeat. */
+
     private val repeatOfWorkoutId: String? = null,
     private val exerciseRepository: ExerciseRepository,
     private val workoutRepository: WorkoutRepositoryImpl,
@@ -145,12 +136,6 @@ class LogWorkoutViewModel(
         }
     }
 
-    /**
-     * Fills the form from an existing workout.
-     *
-     * Editing keeps the original date; repeating does not — a repeat is a new session
-     * today that happens to start from an old one's exercises and numbers.
-     */
     private suspend fun loadWorkoutInto(id: String, unit: WeightUnit, keepDate: Boolean) {
         val workout = workoutRepository.getWorkout(id) ?: return
         _state.update { current ->
@@ -193,14 +178,13 @@ class LogWorkoutViewModel(
                 blocks = current.blocks + ExerciseBlock(
                     key = nextKey++,
                     exercise = exercise,
-                    // One empty set to type into, so adding an exercise is one tap not two.
+
                     sets = listOf(SetRow(key = nextKey++)),
                 ),
             )
         }
     }
 
-    /** Lets the user log a movement the catalogue does not have, without leaving the screen. */
     fun createAndAddExercise(name: String, muscleGroup: MuscleGroup) {
         viewModelScope.launch {
             when (val result = exerciseRepository.createCustom(userId, name, muscleGroup, null)) {
@@ -221,7 +205,7 @@ class LogWorkoutViewModel(
         current.copy(
             blocks = current.blocks.map { block ->
                 if (block.key != blockKey) return@map block
-                // New sets inherit the last one's numbers: most people repeat the weight.
+
                 val previous = block.sets.lastOrNull { !it.isWarmup } ?: block.sets.lastOrNull()
                 block.copy(
                     sets = block.sets + SetRow(
@@ -275,10 +259,7 @@ class LogWorkoutViewModel(
         _state.update { it.copy(isSaving = true, error = null) }
         viewModelScope.launch {
             val zone = clock.zone()
-            // Today's workouts get the real time of day. Two sessions on one day are
-            // common, and stamping both at noon would leave the records with no way to
-            // tell which came first. A back-dated workout has no true time, so it sits at
-            // noon and the repository nudges it past any session already on that date.
+
             val performedAt = if (current.date == clock.today()) {
                 clock.nowMillis()
             } else {
@@ -326,8 +307,6 @@ class LogWorkoutViewModel(
 
     fun clearError() = _state.update { it.copy(error = null) }
 
-    // --- Rest timer -------------------------------------------------------------------
-
     private var tickJob: Job? = null
 
     fun startRest(seconds: Int = _state.value.restSeconds) {
@@ -346,7 +325,6 @@ class LogWorkoutViewModel(
         restartTicking()
     }
 
-    /** Adds 30 seconds without resetting the clock, so elapsed rest still counts. */
     fun extendRest() {
         val rest = _state.value.rest ?: return
         val extended = RestTimer.extend(rest.durationSeconds)
@@ -371,11 +349,6 @@ class LogWorkoutViewModel(
         _state.update { it.copy(rest = null) }
     }
 
-    /**
-     * Ticks once a second purely to refresh the display. The remaining time is always
-     * recomputed from the start instant, so a missed tick — or the app being away
-     * entirely — cannot make the timer drift.
-     */
     private fun restartTicking() {
         tickJob?.cancel()
         tickJob = viewModelScope.launch {

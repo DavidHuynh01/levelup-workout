@@ -19,10 +19,6 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
-/**
- * What the Log Workout screen hands over to be saved. Ids are absent for new rows and
- * present when an existing workout is being edited.
- */
 data class WorkoutDraft(
     val workoutId: String? = null,
     val userId: String,
@@ -71,20 +67,11 @@ class WorkoutRepositoryImpl(
     override fun observeWorkoutDates(userId: String): Flow<List<String>> =
         workoutDao.observeWorkoutDates(userId)
 
-    /**
-     * Saves a new workout or replaces an existing one, then rebuilds everything derived
-     * from it — all inside one transaction, so a crash halfway cannot leave records that
-     * disagree with the sets they came from.
-     *
-     * Returns the records this save broke.
-     */
     suspend fun save(draft: WorkoutDraft): SaveOutcome = database.withTransaction {
         val isEdit = draft.workoutId != null
         val workoutId = draft.workoutId ?: tokens.newId()
         val now = clock.nowMillis()
 
-        // Exercises present before the edit still need their records rebuilt, even if this
-        // save removes them — otherwise a withdrawn exercise keeps a record it no longer earns.
         val previousExerciseIds =
             if (isEdit) setDao.exerciseIdsInWorkout(workoutId) else emptyList()
         val newExerciseIds = draft.exercises.map { it.exerciseId }
@@ -96,9 +83,6 @@ class WorkoutRepositoryImpl(
         val localDate = LocalDate.ofInstant(Instant.ofEpochMilli(draft.performedAt), zone)
         val existing = if (isEdit) workoutDao.getWorkoutRow(workoutId) else null
 
-        // Records are ordered by when a set was completed, so two workouts must never share
-        // an instant. Back-dated sessions all arrive at noon, so each one after the first
-        // on a given day is nudged forward to keep "which came first" answerable.
         val performedAt = uniqueInstantFor(draft, workoutId, localDate.toString())
 
         workoutDao.upsertWorkout(
@@ -119,8 +103,6 @@ class WorkoutRepositoryImpl(
             )
         )
 
-        // Children are rewritten wholesale: simpler than diffing, and CASCADE means the old
-        // sets go with the old workout_exercises rows.
         if (isEdit) workoutDao.deleteWorkoutExercises(workoutId)
 
         val workoutExercises = mutableListOf<WorkoutExerciseEntity>()
@@ -147,7 +129,7 @@ class WorkoutRepositoryImpl(
                     weightKg = setDraft.weightKg,
                     isWarmup = setDraft.isWarmup,
                     rpe = setDraft.rpe,
-                    // Sets share the workout's instant, offset so their order is stable.
+
                     completedAt = performedAt + (exerciseIndex * 100L) + setIndex,
                     localDate = localDate.toString(),
                 )
@@ -164,21 +146,12 @@ class WorkoutRepositoryImpl(
     }
 
     suspend fun delete(userId: String, workoutId: String) = database.withTransaction {
-        // Captured before the delete: afterwards the sets are gone and so is the evidence
-        // of which records need lowering.
+
         val affected = setDao.exerciseIdsInWorkout(workoutId)
         workoutDao.deleteWorkout(workoutId)
         recomputer.recomputeAfterMutation(userId, affected, workoutId = null)
     }
 
-    /**
-     * Returns an instant no other workout of this user already occupies.
-     *
-     * Sets are ordered by completedAt when records are rebuilt. If two sessions on the
-     * same day shared one instant, the tie would break on a random id and the earlier
-     * session could end up looking later — which silently drops a record that should have
-     * been superseded rather than replaced.
-     */
     private suspend fun uniqueInstantFor(
         draft: WorkoutDraft,
         workoutId: String,
@@ -189,7 +162,6 @@ class WorkoutRepositoryImpl(
             .map { it.performedAt }
             .toSet()
 
-        // Each set is offset by up to a few hundred ms, so sessions are spaced past that.
         var candidate = draft.performedAt
         while (taken.any { kotlin.math.abs(it - candidate) < SESSION_SPACING_MS }) {
             candidate += SESSION_SPACING_MS
@@ -202,7 +174,7 @@ class WorkoutRepositoryImpl(
     data class SaveOutcome(val workoutId: String, val awards: List<PrAward>)
 
     private companion object {
-        /** One minute apart: far clear of the per-set millisecond offsets. */
+
         const val SESSION_SPACING_MS = 60_000L
     }
 }

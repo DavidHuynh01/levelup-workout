@@ -82,7 +82,6 @@ class ProfileViewModel(
         ProfileUiState(user = user, stats = stats, isLoading = false)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProfileUiState())
 
-    /** Display only: stored weights are always kilograms, so nothing is converted on disk. */
     fun setWeightUnit(unit: WeightUnit) {
         viewModelScope.launch { authRepository.updateWeightUnit(userId, unit) }
     }
@@ -118,7 +117,6 @@ class ProfileViewModel(
         }
     }
 
-    /** Called once the share sheet has been launched, so it does not fire again. */
     fun clearExport() { _export.value = ExportState.Idle }
 
     fun shareIntent(export: WorkoutExporter.Export) = exporter.shareIntent(export)
@@ -131,11 +129,6 @@ sealed interface ExportState {
     data class Failed(val message: String) : ExportState
 }
 
-/**
- * Emoji avatars rather than uploaded photos: no storage permission, no file copying, no
- * broken image when a content URI goes stale — which is exactly what the Foodie app's
- * profile pictures ran into.
- */
 private val AVATAR_CHOICES = listOf(
     "💪", "🔥", "⚡", "🏋", "🦍",
     "🐻", "🦅", "🚀", "🌟", "🎯",
@@ -166,7 +159,7 @@ fun ProfileScreen(
 
     LaunchedEffect(exportState) {
         val ready = exportState as? ExportState.Ready ?: return@LaunchedEffect
-        // Sharing is a side effect, so it belongs in an effect rather than in composition.
+
         context.startActivity(
             Intent.createChooser(viewModel.shareIntent(ready.export), "Share your workouts")
         )

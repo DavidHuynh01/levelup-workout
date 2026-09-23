@@ -3,10 +3,6 @@ package com.davidhuynh.levelup.domain.logic
 import java.time.LocalDate
 import java.time.temporal.WeekFields
 
-/**
- * Sessions per week, the secondary consistency metric behind streaks. Weeks are ISO
- * weeks, Monday to Sunday, so "this week" does not shift around by locale.
- */
 object ConsistencyCalculator {
 
     private val ISO = WeekFields.ISO
@@ -23,7 +19,6 @@ object ConsistencyCalculator {
     fun startOfWeek(day: LocalDate): LocalDate =
         day.with(ISO.dayOfWeek(), 1L)
 
-    /** Distinct training days in the trailing [days] window, today included. */
     fun daysTrainedInLast(workoutDates: Collection<LocalDate>, today: LocalDate, days: Int): Int {
         val earliest = today.minusDays((days - 1).toLong())
         return workoutDates.distinct().count { it >= earliest && it <= today }

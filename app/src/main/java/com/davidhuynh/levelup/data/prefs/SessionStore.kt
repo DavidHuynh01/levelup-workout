@@ -17,12 +17,11 @@ import kotlinx.coroutines.flow.map
 import java.time.Duration
 
 interface SessionStore {
-    /** Emits null when there is no session or the stored one has expired. */
+
     val session: Flow<Session?>
 
     suspend fun save(userId: String, token: String, ttl: Duration = DEFAULT_TTL)
 
-    /** Slides the expiry forward, so an active user is never logged out mid-use. */
     suspend fun touch(ttl: Duration = DEFAULT_TTL)
 
     suspend fun clear()
@@ -34,11 +33,6 @@ interface SessionStore {
 
 private val Context.sessionDataStore: DataStore<Preferences> by preferencesDataStore("levelup_session")
 
-/**
- * DataStore rather than EncryptedSharedPreferences: that library was deprecated in 2025
- * and brought keyset corruption and main-thread I/O with it. Nothing secret is kept here
- * anyway — the password hash lives in the database and the plaintext is never stored.
- */
 class DataStoreSessionStore(
     private val context: Context,
     private val clock: AppClock,
@@ -84,7 +78,6 @@ class DataStoreSessionStore(
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore("levelup_settings")
 
-/** Display preferences that are per device rather than per account. */
 class UserPreferencesStore(private val context: Context) {
 
     val weightUnit: Flow<WeightUnit> = context.settingsDataStore.data.map { prefs ->
@@ -97,7 +90,6 @@ class UserPreferencesStore(private val context: Context) {
         context.settingsDataStore.edit { it[KEY_WEIGHT_UNIT] = unit.name }
     }
 
-    /** Remembered between sessions: most people rest the same length every workout. */
     val restSeconds: Flow<Int> = context.settingsDataStore.data.map { prefs ->
         prefs[KEY_REST_SECONDS] ?: RestTimer.DEFAULT_SECONDS
     }

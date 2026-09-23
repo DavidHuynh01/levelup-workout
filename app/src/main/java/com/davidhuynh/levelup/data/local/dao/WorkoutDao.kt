@@ -65,7 +65,6 @@ interface WorkoutDao {
     @Query("DELETE FROM workouts WHERE id = :workoutId")
     suspend fun deleteWorkout(workoutId: String)
 
-    /** Children go with it via ON DELETE CASCADE, which Room enables by default. */
     @Query("DELETE FROM workout_exercises WHERE workoutId = :workoutId")
     suspend fun deleteWorkoutExercises(workoutId: String)
 
@@ -88,7 +87,6 @@ interface WorkoutDao {
     @Query("SELECT * FROM workouts WHERE id = :workoutId LIMIT 1")
     suspend fun getWorkoutRow(workoutId: String): WorkoutEntity?
 
-    /** Source data for streaks: one entry per day the user trained. */
     @Query("SELECT DISTINCT localDate FROM workouts WHERE userId = :userId ORDER BY localDate DESC")
     fun observeWorkoutDates(userId: String): Flow<List<String>>
 
@@ -101,7 +99,6 @@ interface WorkoutDao {
     @Query("SELECT id FROM workouts WHERE userId = :userId")
     suspend fun workoutIdsForUser(userId: String): List<String>
 
-    /** Used to keep two sessions on the same day from sharing an instant. */
     @Query("SELECT id, performedAt FROM workouts WHERE userId = :userId AND localDate = :localDate")
     suspend fun performedAtOn(userId: String, localDate: String): List<WorkoutInstant>
 
@@ -124,7 +121,6 @@ interface ExerciseSetDao {
     @Query("DELETE FROM exercise_sets WHERE workoutId = :workoutId")
     suspend fun deleteForWorkout(workoutId: String)
 
-    /** Total volume for one user: the leaderboard's headline number, in one indexed scan. */
     @Query(
         """
         SELECT COALESCE(SUM(reps * weightKg), 0.0) FROM exercise_sets
@@ -152,7 +148,6 @@ interface ExerciseSetDao {
     )
     suspend fun totalReps(userId: String): Int
 
-    /** Feeds PrDetector, which rebuilds the whole record chain for this exercise. */
     @Query(
         """
         SELECT * FROM exercise_sets
@@ -162,7 +157,6 @@ interface ExerciseSetDao {
     )
     suspend fun workingSetsForExercise(userId: String, exerciseId: String): List<ExerciseSetEntity>
 
-    /** Same rows as above, observed, for the progress chart. */
     @Query(
         """
         SELECT * FROM exercise_sets
@@ -175,7 +169,6 @@ interface ExerciseSetDao {
     @Query("SELECT DISTINCT exerciseId FROM exercise_sets WHERE workoutId = :workoutId")
     suspend fun exerciseIdsInWorkout(workoutId: String): List<String>
 
-    /** Every exercise this user has ever logged a set for, for a full records rebuild. */
     @Query("SELECT DISTINCT exerciseId FROM exercise_sets WHERE userId = :userId")
     suspend fun exerciseIdsForUser(userId: String): List<String>
 

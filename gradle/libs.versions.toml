@@ -2,9 +2,6 @@
 agp = "8.11.1"
 kotlin = "2.2.21"
 ksp = "2.2.21-2.0.5"
-# No Compose BOM on purpose: BOM 2026.06.01 constrains lifecycle to 2.11.0 and
-# navigation to 2.10.1, both of which demand AGP 9.1 + compileSdk 37. Pinned
-# explicitly instead, at the newest versions AGP 8.11.1 / compileSdk 36 accept.
 composeUi = "1.11.2"
 composeMaterial3 = "1.4.0"
 coreKtx = "1.18.0"

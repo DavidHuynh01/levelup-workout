@@ -17,21 +17,6 @@ import com.davidhuynh.levelup.domain.model.PrType
 import com.davidhuynh.levelup.domain.security.TokenGenerator
 import com.davidhuynh.levelup.domain.util.AppClock
 
-/**
- * Rebuilds everything that is derived rather than entered: a workout's cached totals, the
- * personal record chain for each affected exercise, and the user's stats row.
- *
- * The rule this class exists to enforce is that personal_records and user_stats have no
- * authority. They are caches over exercise_sets, and after any mutation they are rebuilt
- * rather than patched. Patching cannot handle the cases that actually come up:
- *
- *  - Deleting the workout that held a record has to lower that record back to the previous
- *    best. An update-on-insert path has no code that ever lowers a record.
- *  - Editing a workout to drop an exercise has to withdraw that exercise's contribution,
- *    so the affected set is the union of exercises before and after the edit.
- *  - Logging a back-dated workout can change which achievement came first, reordering the
- *    whole chain. Only a rebuild gets that right.
- */
 class DerivedDataRecomputer(
     private val workoutDao: WorkoutDao,
     private val setDao: ExerciseSetDao,
@@ -42,17 +27,12 @@ class DerivedDataRecomputer(
     private val clock: AppClock,
 ) {
 
-    /** Records that currently stand for these exercises, keyed for cheap diffing. */
     suspend fun snapshotRecords(userId: String, exerciseIds: Collection<String>): Map<RecordKey, Double> {
         if (exerciseIds.isEmpty()) return emptyMap()
         return recordDao.currentRecordsForExercises(userId, exerciseIds.toList())
             .associate { RecordKey(it.exerciseId, it.recordType) to it.value }
     }
 
-    /**
-     * Rebuilds records for [exerciseIds], the workout's cached totals, and the user's
-     * stats. Callers run this inside the same transaction as the mutation itself.
-     */
     suspend fun recomputeAfterMutation(
         userId: String,
         exerciseIds: Collection<String>,
@@ -65,7 +45,6 @@ class DerivedDataRecomputer(
         recomputeUserStats(userId)
     }
 
-    /** What the just-saved workout actually broke, for the celebration dialog. */
     suspend fun awardsFrom(
         userId: String,
         exerciseIds: Collection<String>,
@@ -125,7 +104,7 @@ class DerivedDataRecomputer(
     }
 
     private suspend fun refreshWorkoutTotals(workoutId: String) {
-        // The workout may have just been deleted, in which case there is nothing to cache.
+
         workoutDao.getWorkoutRow(workoutId) ?: return
         val sets = setDao.setsForWorkout(workoutId)
         val working = sets.filter { !it.isWarmup && it.reps > 0 }
@@ -138,7 +117,6 @@ class DerivedDataRecomputer(
         )
     }
 
-    /** Recomputes the whole stats row for one user. Never touches anyone else's row. */
     suspend fun recomputeUserStats(userId: String) {
         val dates = workoutDao.workoutDates(userId).map { it.toLocalDate() }
         val today = clock.today()
@@ -161,7 +139,6 @@ class DerivedDataRecomputer(
         )
     }
 
-    /** Full rebuild for one user, used after seeding and available as a repair path. */
     suspend fun recomputeEverything(userId: String) {
         setDao.exerciseIdsForUser(userId).forEach { exerciseId ->
             rebuildRecordChain(userId, exerciseId)

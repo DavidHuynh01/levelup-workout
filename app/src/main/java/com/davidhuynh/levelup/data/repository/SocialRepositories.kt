@@ -22,11 +22,6 @@ import com.davidhuynh.levelup.domain.util.DataResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-/**
- * Leaderboards read the denormalised user_stats table, so ranking is an ORDER BY over one
- * row per user rather than an aggregate over every set ever logged. That is also the shape
- * a Firestore leaderboard collection would take.
- */
 class LeaderboardRepositoryImpl(
     private val statsDao: UserStatsDao,
 ) : LeaderboardRepository {
@@ -36,8 +31,7 @@ class LeaderboardRepositoryImpl(
         metric: LeaderboardMetric,
         limit: Int,
     ): Flow<List<LeaderboardEntry>> {
-        // The ordering has to match the metric before the limit bites, or the board can
-        // leave out someone who leads on that metric but not on volume.
+
         val rows = when (metric) {
             LeaderboardMetric.TOTAL_VOLUME -> statsDao.observeGlobalByVolume(limit)
             LeaderboardMetric.CURRENT_STREAK -> statsDao.observeGlobalByStreak(limit)
@@ -46,21 +40,12 @@ class LeaderboardRepositoryImpl(
         return rows.map { list -> list.rank(metric, currentUserId) }
     }
 
-    /**
-     * The friends board is the same projection with one extra predicate, and it always
-     * includes the current user so there is something to compare against.
-     */
     override fun observeFriends(
         currentUserId: String,
         metric: LeaderboardMetric,
     ): Flow<List<LeaderboardEntry>> =
         statsDao.observeFriendsByVolume(currentUserId).map { list -> list.rank(metric, currentUserId) }
 
-    /**
-     * Ranking happens in Kotlin rather than SQL. A correlated subquery would do it, but it
-     * costs a scan per row for a number the list order already implies — and the tie rules
-     * are easier to test as a pure function.
-     */
     private fun List<LeaderboardRow>.rank(
         metric: LeaderboardMetric,
         currentUserId: String,
@@ -122,13 +107,12 @@ class FriendRepositoryImpl(
         if (friendDao.areFriends(fromUserId, toUserId)) {
             return DataResult.Failure("You are already friends")
         }
-        // Checked in both directions, so two people adding each other at once cannot end
-        // up with a pair of mirror-image pending requests.
+
         friendDao.pendingRequestBetween(fromUserId, toUserId)?.let { existing ->
             return if (existing.fromUserId == fromUserId) {
                 DataResult.Failure("Request already sent")
             } else {
-                // They asked first: accepting theirs is what the user actually means.
+
                 acceptRequest(existing.id)
             }
         }
@@ -152,8 +136,7 @@ class FriendRepositoryImpl(
         val now = clock.nowMillis()
 
         friendDao.updateRequestStatus(requestId, FriendRequestStatus.ACCEPTED.name, now)
-        // Two rows, one per direction: each side's friends list is then a single indexed
-        // lookup with no OR across columns.
+
         friendDao.insertFriendships(
             listOf(
                 FriendshipEntity(tokens.newId(), request.fromUserId, request.toUserId, now),

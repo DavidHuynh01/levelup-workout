@@ -7,7 +7,6 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 
-/** A clock pinned to a fixed date, so streak assertions mean the same thing every day. */
 class FakeClock(
     var instant: Instant = Instant.parse("2026-03-15T12:00:00Z"),
     private val zone: ZoneId = ZoneId.of("America/Chicago"),
@@ -20,7 +19,6 @@ class FakeClock(
     }
 }
 
-/** Builds a working set for record tests, with only the fields each test cares about. */
 fun prSet(
     setId: String,
     reps: Int,

@@ -1,18 +1,9 @@
 package com.davidhuynh.levelup.domain.logic
 
-/**
- * Password rules, returned as a list so a form can show everything that is wrong at once
- * instead of making the user fix one problem per attempt.
- *
- * There is deliberately no "must contain a symbol and an uppercase letter" rule. NIST
- * SP 800-63B found composition rules push people toward predictable substitutions
- * (Password1!) without adding real strength. Length plus a blocklist does more.
- */
 object PasswordPolicy {
 
     const val MIN_LENGTH = 8
 
-    /** Upper bound so a huge input cannot be used to burn CPU in the key derivation. */
     const val MAX_LENGTH = 72
 
     private val COMMON_PASSWORDS = setOf(
@@ -42,7 +33,6 @@ object PasswordPolicy {
 
     fun isValid(password: String): Boolean = validate(password).isEmpty()
 
-    /** 0 to 4, for the strength meter. Cosmetic: [validate] is what gates a signup. */
     fun strength(password: String): Int {
         if (password.isEmpty()) return 0
         var score = 0
@@ -55,12 +45,10 @@ object PasswordPolicy {
     }
 }
 
-/** Email shape check. Real validation is a confirmation email, which this app has no server for. */
 object EmailValidator {
     private val PATTERN = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]{2,}$")
 
     fun isValid(email: String): Boolean = PATTERN.matches(email.trim())
 
-    /** Emails are stored and compared in this form, so signup and login always agree. */
     fun normalize(email: String): String = email.trim().lowercase()
 }

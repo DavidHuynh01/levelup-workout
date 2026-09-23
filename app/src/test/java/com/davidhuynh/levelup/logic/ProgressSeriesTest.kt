@@ -33,7 +33,7 @@ class ProgressSeriesTest {
                 prSet("backoff", reps = 8, weightKg = 70.0, day = "2026-03-01", workoutId = "w1", completedAtOffset = 60),
             )
         )
-        // 100 x 5 estimates to 116.7; the 70 x 8 back-off set only to 88.7.
+
         assertEquals(116.67, points.single().estimated1rmKg, 0.01)
     }
 
@@ -52,7 +52,6 @@ class ProgressSeriesTest {
         )
     }
 
-    /** A dip is the whole reason to plot sessions rather than records. */
     @Test
     fun `a bad session shows as a dip rather than being hidden`() {
         val points = ProgressSeries.sessionBests(
@@ -81,8 +80,7 @@ class ProgressSeriesTest {
 
     @Test
     fun `high rep sets fall back to raw weight instead of dropping out`() {
-        // 20 reps is past where Epley is trustworthy, so there is no estimate — but the
-        // session still happened and still belongs on the chart.
+
         val points = ProgressSeries.sessionBests(
             listOf(prSet("a", reps = 20, weightKg = 60.0, day = "2026-03-01", workoutId = "w1"))
         )

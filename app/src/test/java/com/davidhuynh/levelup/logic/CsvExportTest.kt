@@ -70,7 +70,7 @@ class CsvExportTest {
             ),
             WeightUnit.KG,
         )
-        assertEquals(4, lines(csv).size) // header + 3 sets
+        assertEquals(4, lines(csv).size)
     }
 
     @Test
@@ -100,7 +100,6 @@ class CsvExportTest {
         assertTrue("working row carries its volume", rows[1].endsWith(",no,500"))
     }
 
-    /** A stray comma in a workout name would otherwise shift every column after it. */
     @Test
     fun `names containing commas and quotes are quoted properly`() {
         val csv = CsvExport.toCsv(
@@ -109,7 +108,7 @@ class CsvExportTest {
         )
         val row = lines(csv)[1]
         assertTrue(row.contains("\"Push, heavy \"\"top set\"\"\""))
-        // Ten columns, so the quoting did not leak an extra field.
+
         assertEquals(10, splitCsvRow(row).size)
     }
 
@@ -132,7 +131,6 @@ class CsvExportTest {
         assertEquals("levelup-workouts-2026-03-15.csv", CsvExport.fileName("2026-03-15"))
     }
 
-    /** Minimal RFC 4180 reader, only good enough to count fields in a test. */
     private fun splitCsvRow(row: String): List<String> {
         val fields = mutableListOf<String>()
         val current = StringBuilder()

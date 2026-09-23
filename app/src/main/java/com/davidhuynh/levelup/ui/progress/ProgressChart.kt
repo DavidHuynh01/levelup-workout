@@ -30,20 +30,13 @@ import kotlin.math.abs
 
 private val axisDateFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM")
 
-/**
- * Estimated one-rep max per session, over time.
- *
- * One series, so there is no legend — the title names it. Only the first, last and best
- * points are labelled rather than every point, and the record list below the chart is the
- * table view of the same data.
- */
 @Composable
 fun ProgressChart(
     points: List<ProgressPoint>,
     unit: WeightUnit,
     modifier: Modifier = Modifier,
 ) {
-    // Two points is the minimum that can show a direction; one is just a dot.
+
     if (points.size < 2) return
 
     val lineColor = ChartLine
@@ -55,7 +48,6 @@ fun ProgressChart(
     val first = values.first()
     val latest = values.last()
 
-    // A flat series would divide by zero, so pad the range when everything is equal.
     val top = if (best == lowest) best + 1.0 else best
     val bottom = if (best == lowest) lowest - 1.0 else lowest
     val span = top - bottom
@@ -107,7 +99,6 @@ fun ProgressChart(
                 val usableWidth = size.width - inset * 2
                 val usableHeight = size.height - inset * 2
 
-                // Three recessive gridlines: low, middle, high. No axis box.
                 repeat(3) { index ->
                     val y = inset + usableHeight * index / 2f
                     drawLine(
@@ -131,13 +122,10 @@ fun ProgressChart(
                 }
                 drawPath(path, color = lineColor, style = Stroke(width = 2.dp.toPx()))
 
-                // Endpoints and the best session get a marker; the rest stay unmarked so the
-                // shape of the line is what reads.
                 val bestIndex = values.indexOf(best)
                 listOf(0, bestIndex, points.lastIndex).distinct().forEach { index ->
                     val centre = positions[index]
-                    // A surface ring first, so a marker sitting on the line still reads as
-                    // a separate mark rather than a bulge in it.
+
                     drawCircle(color = surfaceColor, radius = markerRadius + 2.dp.toPx(), center = centre)
                     drawCircle(color = lineColor, radius = markerRadius, center = centre)
                 }
@@ -151,8 +139,7 @@ fun ProgressChart(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                // A single day of sessions has nothing to span, so its one date is centred
-                // rather than printed at both ends.
+
                 horizontalArrangement = if (firstDate == lastDate) {
                     Arrangement.Center
                 } else {
@@ -166,8 +153,7 @@ fun ProgressChart(
                 )
 
                 if (firstDate != lastDate) {
-                    // The headline already gives the latest figure, so the middle label is
-                    // only worth the space when the best session is not the latest one.
+
                     if (!bestIsLatest) {
                         Text(
                             text = "best ${WeightConverter.format(best, unit)}",

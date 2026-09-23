@@ -3,10 +3,6 @@ package com.davidhuynh.levelup.domain.logic
 import com.davidhuynh.levelup.domain.model.PrType
 import java.time.LocalDate
 
-/**
- * A working set, flattened to exactly what record detection needs. Deliberately not a
- * Room entity: this keeps [PrDetector] a pure function that unit tests can drive.
- */
 data class PrInputSet(
     val setId: String,
     val workoutId: String,
@@ -17,7 +13,6 @@ data class PrInputSet(
     val localDate: LocalDate,
 )
 
-/** One record in the chain, before it is given an id and written to the database. */
 data class PrDraft(
     val recordType: PrType,
     val value: Double,
@@ -27,23 +22,12 @@ data class PrDraft(
     val achievedOnLocalDate: LocalDate,
     val workoutId: String?,
     val setId: String?,
-    /** Null on the record that currently stands. */
+
     val supersededAt: Long? = null,
 )
 
-/**
- * Rebuilds the complete record history for one exercise from every working set the user
- * has ever logged for it.
- *
- * This always rebuilds from scratch rather than comparing a new set against the stored
- * record. Incremental updating cannot handle the three cases that matter: deleting the
- * workout that held a record has to lower it again, removing an exercise from a workout
- * has to withdraw its records, and back-dating a workout reorders which achievement came
- * first. A full rebuild handles all three by construction.
- */
 object PrDetector {
 
-    /** Floating point slack. A record must be beaten, not matched. */
     private const val EPSILON = 1e-6
 
     fun buildHistory(sets: List<PrInputSet>): List<PrDraft> {
@@ -61,7 +45,6 @@ object PrDetector {
         return stampSupersededAt(drafts)
     }
 
-    /** The records that stand right now, at most one per type. */
     fun currentRecords(history: List<PrDraft>): Map<PrType, PrDraft> =
         history.filter { it.supersededAt == null }.associateBy { it.recordType }
 
@@ -91,10 +74,6 @@ object PrDetector {
         return records
     }
 
-    /**
-     * Session volume is a property of a whole workout, so it is credited to the moment
-     * that workout's last set was completed.
-     */
     private fun scanSessionVolume(chronological: List<PrInputSet>): List<PrDraft> {
         val sessions = chronological
             .groupBy { it.workoutId }
@@ -131,7 +110,6 @@ object PrDetector {
         return records
     }
 
-    /** Within each type, a record stands until the next one beats it. */
     private fun stampSupersededAt(drafts: List<PrDraft>): List<PrDraft> =
         drafts.groupBy { it.recordType }.values.flatMap { chain ->
             val ordered = chain.sortedBy { it.achievedAt }

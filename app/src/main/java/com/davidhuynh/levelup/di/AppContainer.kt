@@ -35,14 +35,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
-/**
- * Hand-rolled dependency container instead of Hilt.
- *
- * With this few objects, Hilt would add a second annotation processor and a layer of
- * generated code between a mistake and its error message. It also would not help with the
- * thing this app actually needs to stay flexible about: swapping the local repositories
- * for Firebase ones later is a one-line change per repository right here.
- */
 class AppContainer(private val context: Context) {
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -90,8 +82,7 @@ class AppContainer(private val context: Context) {
             clock = clock,
             statsRecomputer = recomputer,
             onUserCreated = { newUserId ->
-                // Wrapped: this is a debug convenience, and it must never be the reason a
-                // real signup fails.
+
                 if (BuildConfig.DEBUG) {
                     runCatching { demoSeeder.seedIncomingRequestsFor(newUserId) }
                 }
@@ -103,7 +94,6 @@ class AppContainer(private val context: Context) {
         ExerciseRepositoryImpl(database.exerciseDao(), tokens, clock)
     }
 
-    /** Concrete type: save and delete are commands this class owns, not read queries. */
     val workoutRepository: WorkoutRepositoryImpl by lazy {
         WorkoutRepositoryImpl(
             database = database,
@@ -132,7 +122,6 @@ class AppContainer(private val context: Context) {
         LeaderboardRepositoryImpl(database.userStatsDao())
     }
 
-    /** Concrete: the Friends screen also observes outgoing requests, beyond the interface. */
     val friendRepository: FriendRepositoryImpl by lazy {
         FriendRepositoryImpl(database.friendDao(), database.userDao(), tokens, clock)
     }
@@ -144,20 +133,10 @@ class AppContainer(private val context: Context) {
     val saveWorkoutUseCase: SaveWorkoutUseCase by lazy { SaveWorkoutUseCase(workoutRepository) }
     val deleteWorkoutUseCase: DeleteWorkoutUseCase by lazy { DeleteWorkoutUseCase(workoutRepository) }
 
-    /**
-     * Opens the database at startup rather than waiting for the first screen that needs it.
-     *
-     * Without this, nothing touches Room until a user signs up — so the exercise catalogue
-     * and the demo leaderboard would still be seeding while the signup was being written.
-     */
     fun warmUp() {
         applicationScope.launch { database.userDao().count() }
     }
 
-    /**
-     * Runs on every database open. The catalogue insert ignores conflicts, so it is
-     * effectively a no-op after the first launch.
-     */
     private fun onDatabaseOpened(db: LevelUpDatabase) {
         applicationScope.launch {
             db.exerciseDao().insertAll(ExerciseCatalogSeed.exercises(clock.nowMillis()))

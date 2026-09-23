@@ -50,13 +50,6 @@ import com.davidhuynh.levelup.ui.workout.detail.WorkoutDetailViewModel
 import com.davidhuynh.levelup.ui.workout.log.LogWorkoutScreen
 import com.davidhuynh.levelup.ui.workout.log.LogWorkoutViewModel
 
-/**
- * The single decision point for signed in versus signed out.
- *
- * The graph is only built once the stored session has been read, so the start destination is
- * right the first time. That is what avoids the login screen flashing before Home on a cold
- * start, and it means no popUpTo juggling after sign-in.
- */
 @Composable
 fun AuthGate(container: AppContainer) {
     val factory = remember(container) { levelUpViewModelFactory(container) }
@@ -109,13 +102,10 @@ private fun SignedInApp(
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
 
-    // Pending friend requests drive the badge on the Profile tab. No push notifications:
-    // with no server there is nothing to send them.
     val pendingRequests by remember(userId) {
         container.friendRepository.observePendingRequestCount(userId)
     }.collectAsStateWithLifecycle(initialValue = 0)
 
-    // The bottom bar belongs to the tabs, not to full-screen flows like logging a workout.
     val showBottomBar = backStackEntry?.destination?.hierarchy?.any { destination ->
         BottomTab.entries.any { it.route == destination.route }
     } == true
@@ -234,8 +224,7 @@ private fun SignedInApp(
             ) { entry ->
                 val workoutId = entry.arguments?.getString("workoutId")
                 val repeatOf = entry.arguments?.getString("repeatOf")
-                // Keyed by the source workout so editing or repeating two in a row does
-                // not reuse the first one's draft.
+
                 val viewModel: LogWorkoutViewModel = viewModel(
                     key = "log-${workoutId ?: repeatOf?.let { "repeat-$it" } ?: "new"}",
                     factory = factory,

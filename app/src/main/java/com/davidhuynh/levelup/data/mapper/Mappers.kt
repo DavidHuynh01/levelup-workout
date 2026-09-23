@@ -23,12 +23,6 @@ import com.davidhuynh.levelup.domain.model.Workout
 import com.davidhuynh.levelup.domain.model.WorkoutExercise
 import java.time.LocalDate
 
-/**
- * Entities store enums by name and dates as ISO text, so all parsing lives here. Unknown
- * values fall back rather than throwing: a crash on read would make a bad row permanently
- * unopenable.
- */
-
 fun String.toLocalDate(): LocalDate = LocalDate.parse(this)
 
 fun LocalDate.toStoredDate(): String = toString()

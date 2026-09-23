@@ -19,11 +19,6 @@ interface UserDao {
     @Update
     suspend fun update(user: UserEntity)
 
-    /**
-     * Sign-in looks the account up by email and then verifies the password in Kotlin.
-     * Never "WHERE email = ? AND passwordHash = ?" — that would mean comparing derived
-     * key material in SQL, which cannot be done in constant time.
-     */
     @Query("SELECT * FROM users WHERE email = :email LIMIT 1")
     suspend fun findByEmail(email: String): UserEntity?
 
@@ -39,18 +34,9 @@ interface UserDao {
     @Query("SELECT COUNT(*) FROM users")
     suspend fun count(): Int
 
-    /**
-     * Counted separately from real accounts: if a user signs up before seeding finishes,
-     * a plain "any users?" check would skip the demo data forever.
-     */
     @Query("SELECT COUNT(*) FROM users WHERE isDemo = 1")
     suspend fun demoCount(): Int
 
-    /**
-     * Demo accounts are searchable on purpose: on a fresh install they are the only other
-     * lifters on the device, so excluding them would leave the friend flow with nobody to
-     * add. They stay flagged, so the UI can label them.
-     */
     @Query(
         """
         SELECT * FROM users
@@ -75,11 +61,6 @@ interface UserStatsDao {
     @Query("SELECT * FROM user_stats WHERE userId = :userId LIMIT 1")
     suspend fun get(userId: String): UserStatsEntity?
 
-    /**
-     * Phase 4's global leaderboard. Because user_stats already holds each user's totals,
-     * ranking is a plain ORDER BY rather than an aggregate across every workout ever
-     * logged. Rank is computed in Kotlin from the row order.
-     */
     @Query(
         """
         SELECT u.id AS userId, u.displayName AS displayName, u.avatarEmoji AS avatarEmoji,
@@ -108,11 +89,6 @@ interface UserStatsDao {
     )
     fun observeGlobalByStreak(limit: Int): Flow<List<LeaderboardRow>>
 
-    /**
-     * Each metric needs its own ordering before the limit is applied. Taking the top 50 by
-     * volume and re-sorting them by records would silently drop someone who has a pile of
-     * records without the tonnage to match.
-     */
     @Query(
         """
         SELECT u.id AS userId, u.displayName AS displayName, u.avatarEmoji AS avatarEmoji,
@@ -127,7 +103,6 @@ interface UserStatsDao {
     )
     fun observeGlobalByPrCount(limit: Int): Flow<List<LeaderboardRow>>
 
-    /** No limit: a friends list is small, and everyone on it should be on the board. */
     @Query(
         """
         SELECT u.id AS userId, u.displayName AS displayName, u.avatarEmoji AS avatarEmoji,

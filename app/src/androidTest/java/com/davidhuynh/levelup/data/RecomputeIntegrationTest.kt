@@ -27,14 +27,6 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
-/**
- * The record and stats caches against a real database.
- *
- * The unit tests prove PrDetector rebuilds a chain correctly from a list of sets. These
- * prove the rest of the path: that a mutation really does trigger the rebuild, that
- * foreign keys cascade, and that deleting or back-dating a workout leaves the caches
- * agreeing with the sets that remain.
- */
 @RunWith(AndroidJUnit4::class)
 class RecomputeIntegrationTest {
 
@@ -112,7 +104,6 @@ class RecomputeIntegrationTest {
 
         repository.delete(userId, heavyId)
 
-        // The point of rebuilding rather than patching: this number has to come back down.
         assertEquals(100.0, currentRecord(PrType.MAX_WEIGHT)!!.value, 0.001)
         assertEquals(1, database.workoutDao().workoutCount(userId))
     }
@@ -135,7 +126,6 @@ class RecomputeIntegrationTest {
         val workoutId = save(day = "2026-03-01", exerciseId = squatId, reps = 5, weightKg = 140.0)
         assertNotNull(currentRecord(PrType.MAX_WEIGHT, squatId))
 
-        // Same workout, edited to be a bench session instead.
         repository.save(
             WorkoutDraft(
                 workoutId = workoutId,
@@ -165,17 +155,11 @@ class RecomputeIntegrationTest {
             .currentRecords(userId)
             .filter { it.record.recordType == PrType.MAX_WEIGHT.name }
 
-        // The back-dated 130 came first, so the later 110 never set a record at all.
         assertEquals(1, chain.size)
         assertEquals(130.0, chain.single().record.value, 0.001)
         assertEquals("2026-03-01", chain.single().record.achievedOnLocalDate)
     }
 
-    /**
-     * Regression test. Two sessions on one day used to be stamped at the same instant, so
-     * the record chain ordered them by a random id: the earlier record disappeared instead
-     * of being superseded by the later one.
-     */
     @Test
     fun twoWorkoutsOnTheSameDayKeepBothLinksOfTheRecordChain() = runBlocking {
         save(day = "2026-03-01", exerciseId = benchId, reps = 8, weightKg = 84.0)
@@ -237,8 +221,6 @@ class RecomputeIntegrationTest {
 
         repository.delete(userId, id)
 
-        // Room enables PRAGMA foreign_keys, so the children go with the parent. Asserted
-        // rather than assumed: without it, orphan sets would keep inflating the totals.
         assertTrue(database.exerciseSetDao().setsForWorkout(id).isEmpty())
         assertEquals(0, database.exerciseSetDao().exerciseIdsForUser(userId).size)
     }
@@ -259,7 +241,7 @@ class RecomputeIntegrationTest {
         stats = database.userStatsDao().get(userId)!!
         assertEquals(500.0 + 700.0, stats.totalVolumeKg, 0.001)
         assertEquals(2, stats.totalWorkouts)
-        // 13th and 14th, with today being the 15th: yesterday still counts.
+
         assertEquals(2, stats.currentStreakDays)
         assertEquals(100.0, currentRecord(PrType.MAX_WEIGHT, benchId)!!.value, 0.001)
     }

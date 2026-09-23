@@ -78,8 +78,7 @@ class FriendsViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), FriendsUiState())
 
     init {
-        // Show everyone up front: on a fresh install the search box would otherwise look
-        // like there is nobody to add.
+
         search("")
     }
 

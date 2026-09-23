@@ -14,7 +14,6 @@ enum class MuscleGroup(val label: String) {
     OTHER("Other"),
 }
 
-/** An entry in the exercise catalogue, either built in or created by a user. */
 data class Exercise(
     val id: String,
     val name: String,
@@ -33,7 +32,7 @@ data class ExerciseSet(
     val rpe: Double? = null,
     val completedAt: Long,
 ) {
-    /** Warmups are logged for the record but never counted toward volume or PRs. */
+
     val countsAsWorking: Boolean get() = !isWarmup && reps > 0
 }
 

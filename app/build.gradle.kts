@@ -37,7 +37,6 @@ android {
 
     buildFeatures {
         compose = true
-        // Off by default since AGP 8.0; the debug-only demo seeding reads BuildConfig.DEBUG.
         buildConfig = true
     }
 }

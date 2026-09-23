@@ -9,13 +9,6 @@ import com.davidhuynh.levelup.ui.workout.log.SetRow
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-/**
- * Regression test for the running total on the log screen.
- *
- * The first version summed the typed numbers and handed them to the formatter as though
- * they were kilograms, so a pounds user saw a total about 2.2x too high: two sets of
- * 8 x 185 lb displayed as 6526 lb instead of 2960 lb.
- */
 class LogWorkoutTotalsTest {
 
     private fun state(unit: WeightUnit, vararg sets: Pair<Int, String>) = LogWorkoutUiState(
@@ -65,8 +58,7 @@ class LogWorkoutTotalsTest {
 
     @Test
     fun `half typed numbers do not break the total`() {
-        // Reps with no weight is a bodyweight set: it counts as a working set and adds no
-        // volume. A trailing decimal point is mid-typing and parses as zero.
+
         val state = state(WeightUnit.LB, 8 to "", 0 to "185.")
         assertEquals("0 lb", state.totalVolumeDisplay)
         assertEquals(1, state.workingSetCount)

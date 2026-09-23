@@ -50,8 +50,7 @@ class ExerciseRepositoryImpl(
         if (trimmed.length > 60) return DataResult.Failure("Keep the name under 60 characters", "name")
 
         exerciseDao.findByName(trimmed)?.let { existing ->
-            // Reuse rather than reject: the user wants to log this movement, and the name
-            // column is unique anyway.
+
             return DataResult.Success(existing.toDomain())
         }
 
@@ -98,15 +97,6 @@ class StatsRepositoryImpl(
     private val clock: AppClock,
 ) : StatsRepository {
 
-    /**
-     * Totals come from the cached stats row, but the streak and this-week count are
-     * recomputed here against today's date.
-     *
-     * Those two are the only figures that change without anybody writing anything: a
-     * 3 day streak is still 3 tomorrow morning, then 0 the day after. Reading them from
-     * the cache means a streak that only updates when you next log a workout, which is
-     * exactly backwards.
-     */
     override fun observeStats(userId: String): Flow<UserStats> = combine(
         statsDao.observe(userId),
         workoutDao.observeWorkoutDates(userId),

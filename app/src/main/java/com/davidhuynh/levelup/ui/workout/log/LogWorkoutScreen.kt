@@ -72,9 +72,6 @@ fun LogWorkoutScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showDatePicker by remember { mutableStateOf(false) }
 
-    // Navigation is a side effect, so it runs in an effect rather than during composition.
-    // When the save broke a record, the celebration dialog is shown first and leaving waits
-    // for it to be dismissed.
     LaunchedEffect(state.savedWorkoutId, state.awards.isEmpty()) {
         if (state.savedWorkoutId != null && state.awards.isEmpty()) onSaved()
     }
@@ -411,7 +408,7 @@ private fun WorkoutDatePicker(
                 onClick = {
                     val millis = pickerState.selectedDateMillis
                     if (millis != null) {
-                        // The picker works in UTC, so read the date back the same way.
+
                         onPick(Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate())
                     } else {
                         onDismiss()
@@ -463,17 +460,8 @@ private fun awardDetail(award: PrAward, unit: WeightUnit): String {
     return if (previous == null) "$newValue · first record" else "$newValue, up from $previous"
 }
 
-/** Custom exercises default to Other; the user can refine it later from the catalogue. */
 private fun muscleGroupGuess() = com.davidhuynh.levelup.domain.model.MuscleGroup.OTHER
 
-/**
- * Rest between sets.
- *
- * Idle, it offers the remembered rest length plus the other presets; running, it becomes a
- * countdown with a draining bar. Deliberately in-app only: a background timer that fires
- * notifications would need a foreground service and a notification permission, which is a
- * lot of machinery for a screen you are already looking at between sets.
- */
 @Composable
 private fun RestBar(
     rest: RestState?,

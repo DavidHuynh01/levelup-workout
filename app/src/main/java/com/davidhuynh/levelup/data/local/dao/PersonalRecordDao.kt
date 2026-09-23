@@ -18,7 +18,6 @@ interface PersonalRecordDao {
     @Insert
     suspend fun insertAll(records: List<PersonalRecordEntity>)
 
-    /** The chain for one exercise is always rebuilt whole, never patched. */
     @Query("DELETE FROM personal_records WHERE userId = :userId AND exerciseId = :exerciseId")
     suspend fun deleteForExercise(userId: String, exerciseId: String)
 
@@ -58,7 +57,6 @@ interface PersonalRecordDao {
     suspend fun currentRecordCount(userId: String): Int
 }
 
-/** Phase 5. Written now because the tables ship in v1. */
 @Dao
 interface FriendDao {
 
@@ -83,14 +81,12 @@ interface FriendDao {
     )
     fun observeIncoming(userId: String): Flow<List<FriendRequestEntity>>
 
-    /** Drives the in-app badge on the Friends tab. */
     @Query("SELECT COUNT(*) FROM friend_requests WHERE toUserId = :userId AND status = 'PENDING'")
     fun observePendingCount(userId: String): Flow<Int>
 
     @Query("SELECT * FROM friendships WHERE userId = :userId ORDER BY createdAt DESC")
     fun observeFriendships(userId: String): Flow<List<FriendshipEntity>>
 
-    /** Friends with their profiles, for the friends list and the friends leaderboard. */
     @Query(
         """
         SELECT u.* FROM friendships f
@@ -114,7 +110,6 @@ interface FriendDao {
     @Query("SELECT EXISTS(SELECT 1 FROM friendships WHERE userId = :userId AND friendUserId = :otherId)")
     suspend fun areFriends(userId: String, otherId: String): Boolean
 
-    /** Either direction, so a pending request blocks a duplicate from the other side too. */
     @Query(
         """
         SELECT * FROM friend_requests

@@ -9,7 +9,7 @@ import org.junit.Test
 
 class StreakCalculatorTest {
 
-    private val today = day("2026-03-15") // a Sunday
+    private val today = day("2026-03-15")
 
     @Test
     fun `no workouts means no streak and no last date`() {
@@ -32,7 +32,6 @@ class StreakCalculatorTest {
         assertEquals(3, StreakCalculator.calculate(days, today).currentStreakDays)
     }
 
-    /** The grace day: not having trained yet today must not wipe the streak. */
     @Test
     fun `a streak ending yesterday is still alive`() {
         val days = listOf(day("2026-03-12"), day("2026-03-13"), day("2026-03-14"))
@@ -85,7 +84,7 @@ class StreakCalculatorTest {
 
     @Test
     fun `the day daylight saving starts is still one day long`() {
-        // US DST began 2026-03-08. Counting in dates rather than hours makes this a non-event.
+
         val days = listOf(day("2026-03-07"), day("2026-03-08"), day("2026-03-09"))
         assertEquals(3, StreakCalculator.calculate(days, day("2026-03-09")).currentStreakDays)
     }
@@ -107,7 +106,7 @@ class ConsistencyCalculatorTest {
 
     @Test
     fun `iso weeks start on monday`() {
-        // 2026-03-15 is a Sunday, so its week starts on Monday the 9th.
+
         assertEquals(day("2026-03-09"), ConsistencyCalculator.startOfWeek(day("2026-03-15")))
         assertEquals(day("2026-03-09"), ConsistencyCalculator.startOfWeek(day("2026-03-09")))
     }

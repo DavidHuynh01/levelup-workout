@@ -14,16 +14,6 @@ import com.davidhuynh.levelup.domain.util.AppClock
 import java.time.ZoneId
 import kotlin.random.Random
 
-/**
- * Fills the database with other lifters so leaderboards and friend search have something
- * in them from the first launch.
- *
- * Debug builds only — see AppContainer. A release build starts empty.
- *
- * Demo accounts are flagged isDemo so the UI can label them. They all share the password
- * "demo1234", which is only acceptable because these accounts exist on one device, hold
- * nothing, and never ship in a release build.
- */
 class DemoDataSeeder(
     private val database: LevelUpDatabase,
     private val workoutRepository: WorkoutRepositoryImpl,
@@ -33,13 +23,6 @@ class DemoDataSeeder(
     private val clock: AppClock,
 ) {
 
-    /**
-     * Gives a newly created account two pending friend requests from demo lifters.
-     *
-     * Without this the friend flow has nothing to receive: demo accounts are never signed
-     * into, so nobody would ever send the real user anything and the accept path and the
-     * request badge could not be seen. Debug builds only.
-     */
     suspend fun seedIncomingRequestsFor(userId: String) {
         val friendDao = database.friendDao()
         val senders = database.userDao().search(userId, "").filter { it.isDemo }.take(2)
@@ -64,8 +47,6 @@ class DemoDataSeeder(
         val userDao = database.userDao()
         if (userDao.demoCount() > 0) return
 
-        // One hash reused for every demo account: deriving eight separately would add
-        // roughly two seconds to first launch for no benefit.
         val sharedHash = hasher.hash(DEMO_PASSWORD)
         val now = clock.nowMillis()
         val zone = clock.zone()
@@ -92,7 +73,7 @@ class DemoDataSeeder(
     }
 
     private suspend fun seedWorkouts(userId: String, profile: DemoProfile, zone: ZoneId) {
-        // Seeded per profile so the leaderboard order is stable between installs.
+
         val random = Random(profile.email.hashCode())
         val now = clock.nowMillis()
 
@@ -101,8 +82,6 @@ class DemoDataSeeder(
             val performedAt = now - DAY_MILLIS * daysAgo - HOUR_MILLIS * 3
             val template = TEMPLATES[session % TEMPLATES.size]
 
-            // Lifts creep up over time, so the earliest sessions are the lightest and the
-            // record history has something to walk through.
             val progression = 1.0 - (daysAgo * 0.0015)
 
             val exercises = template.map { (exerciseName, baseWeightKg) ->
@@ -131,7 +110,6 @@ class DemoDataSeeder(
         }
     }
 
-    /** Real gyms load in 2.5 kg jumps, so demo numbers should too. */
     private fun roundToPlate(weightKg: Double): Double =
         (Math.round(weightKg / 2.5) * 2.5).coerceAtLeast(2.5)
 
@@ -139,7 +117,7 @@ class DemoDataSeeder(
         val displayName: String,
         val email: String,
         val emoji: String,
-        /** Multiplier on the template weights. */
+
         val strength: Double,
         val sessions: Int,
         val restDays: Int,
@@ -163,7 +141,6 @@ class DemoDataSeeder(
 
         val TEMPLATE_NAMES = listOf("Push Day", "Pull Day", "Leg Day")
 
-        /** Exercise name to a base working weight in kg for an average lifter. */
         val TEMPLATES: List<List<Pair<String, Double>>> = listOf(
             listOf(
                 "Barbell Bench Press" to 70.0,

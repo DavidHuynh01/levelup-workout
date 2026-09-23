@@ -102,7 +102,7 @@ class OneRepMaxTest {
 
     @Test
     fun `epley adds a third of a percent per rep`() {
-        // 100 x 6 -> 100 * (1 + 6/30) = 120
+
         assertEquals(120.0, OneRepMax.epley(100.0, 6)!!, 0.0001)
     }
 

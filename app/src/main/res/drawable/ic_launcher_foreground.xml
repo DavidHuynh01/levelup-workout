@@ -3,7 +3,6 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Barbell: two plates and a bar, centred in the 72dp safe zone. -->
     <path
         android:fillColor="#7AE582"
         android:pathData="M30,48h48v12h-48z" />

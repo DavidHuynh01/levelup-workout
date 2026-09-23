@@ -87,7 +87,6 @@ fun HistoryScreen(
         return
     }
 
-    // Grouped by month so a long history stays navigable.
     val grouped = state.workouts.groupBy { it.localDate.withDayOfMonth(1) }
 
     LazyColumn(
@@ -99,7 +98,7 @@ fun HistoryScreen(
             item(key = "header-$month") {
                 MonthHeader(month = month, workouts = workouts, unit = state.weightUnit)
             }
-            // Stable keys let Compose move rows instead of rebuilding the list on every change.
+
             items(workouts, key = { it.id }) { workout ->
                 WorkoutSummaryCard(
                     workout = workout,

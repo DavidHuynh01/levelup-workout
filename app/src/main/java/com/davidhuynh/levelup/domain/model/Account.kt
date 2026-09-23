@@ -1,6 +1,5 @@
 package com.davidhuynh.levelup.domain.model
 
-/** A user as the UI knows them. Password material never leaves the data layer. */
 data class User(
     val id: String,
     val email: String,
@@ -11,7 +10,6 @@ data class User(
     val isDemo: Boolean = false,
 )
 
-/** Weight is stored in kilograms everywhere; this only controls display and input. */
 enum class WeightUnit(val label: String, val suffix: String) {
     KG("Kilograms", "kg"),
     LB("Pounds", "lb"),

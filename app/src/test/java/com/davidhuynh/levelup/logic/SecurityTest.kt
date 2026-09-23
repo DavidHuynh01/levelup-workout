@@ -51,7 +51,6 @@ class PasswordPolicyTest {
         assertTrue(PasswordPolicy.validate(" bench100").contains(PasswordPolicy.Violation.SURROUNDING_WHITESPACE))
     }
 
-    /** The form shows every problem at once, so all of them must be reported together. */
     @Test
     fun `every violation is reported in one pass`() {
         val violations = PasswordPolicy.validate("ab")
@@ -92,8 +91,6 @@ class EmailValidatorTest {
 
 class Pbkdf2PasswordHasherTest {
 
-    // Far below the production count: these tests only check the mechanics, and 120k
-    // iterations per assertion would make the suite crawl.
     private val hasher = Pbkdf2PasswordHasher(iterations = 1_000)
 
     @Test
@@ -115,7 +112,7 @@ class Pbkdf2PasswordHasherTest {
         val second = hasher.hash("bench185lbs")
         assertNotEquals(first.salt, second.salt)
         assertNotEquals(first.hash, second.hash)
-        // Both still verify: the salt is what differs, not the password.
+
         assertTrue(hasher.verify("bench185lbs", first))
         assertTrue(hasher.verify("bench185lbs", second))
     }
@@ -124,7 +121,7 @@ class Pbkdf2PasswordHasherTest {
     fun `verification uses the iteration count the hash was stored with`() {
         val weak = Pbkdf2PasswordHasher(iterations = 500).hash("deadlift315")
         assertEquals(500, weak.iterations)
-        // A hasher configured for more iterations still verifies an older, weaker hash.
+
         assertTrue(hasher.verify("deadlift315", weak))
     }
 

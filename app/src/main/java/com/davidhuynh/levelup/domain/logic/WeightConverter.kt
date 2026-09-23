@@ -4,10 +4,6 @@ import com.davidhuynh.levelup.domain.model.WeightUnit
 import kotlin.math.abs
 import kotlin.math.roundToLong
 
-/**
- * Weight is stored in kilograms everywhere in the database. This converts at the edges,
- * so switching the display unit never rewrites stored data.
- */
 object WeightConverter {
 
     const val KG_PER_LB = 0.45359237
@@ -22,17 +18,12 @@ object WeightConverter {
         WeightUnit.LB -> valueKg / KG_PER_LB
     }
 
-    /** Weight for an input field: one decimal, and no trailing ".0" to retype around. */
     fun formatValue(valueKg: Double, unit: WeightUnit): String =
         trimNumber(fromKg(valueKg, unit), decimals = 1)
 
-    /** Weight with its unit, for display. */
     fun format(valueKg: Double, unit: WeightUnit): String =
         "${formatValue(valueKg, unit)} ${unit.suffix}"
 
-    /**
-     * Total volume, which reaches six figures fast, so it is abbreviated: 12.4k lb.
-     */
     fun formatVolume(volumeKg: Double, unit: WeightUnit): String {
         val value = fromKg(volumeKg, unit)
         val abs = abs(value)

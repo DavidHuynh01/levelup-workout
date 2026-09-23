@@ -16,12 +16,6 @@ import com.davidhuynh.levelup.domain.model.Workout
 import com.davidhuynh.levelup.domain.util.DataResult
 import kotlinx.coroutines.flow.Flow
 
-/**
- * Every interface here speaks only in domain models — no Room entities, no Cursor, no
- * Firebase types. That is the whole point: a Firebase implementation can be written later
- * and swapped in inside AppContainer without a single UI file changing.
- */
-
 interface AuthRepository {
     val session: Flow<Session?>
 
@@ -36,7 +30,6 @@ interface AuthRepository {
 
     suspend fun signOut()
 
-    /** Extends the stored session on app open, so an active user is never logged out. */
     suspend fun refreshSession()
 
     fun observeUser(userId: String): Flow<User?>
@@ -72,20 +65,17 @@ interface WorkoutRepository {
 
     fun observeRecentWorkouts(userId: String, limit: Int): Flow<List<Workout>>
 
-    /** Every training day, for the streak calculation. */
     fun observeWorkoutDates(userId: String): Flow<List<String>>
 }
 
 interface PersonalRecordRepository {
-    /** Records that currently stand, newest first. */
+
     fun observeCurrentRecords(userId: String): Flow<List<PersonalRecord>>
 
-    /** The full chain for one exercise, including beaten records. */
     fun observeRecordHistory(userId: String, exerciseId: String): Flow<List<PersonalRecord>>
 
     suspend fun currentRecords(userId: String): List<PersonalRecord>
 
-    /** Best effort per session on one exercise, for the progress chart. */
     fun observeProgress(userId: String, exerciseId: String): Flow<List<ProgressPoint>>
 }
 
@@ -95,14 +85,12 @@ interface StatsRepository {
     suspend fun recomputeAll(userId: String)
 }
 
-/** Phase 4. The tables and queries exist from v1; only the screen is still missing. */
 interface LeaderboardRepository {
     fun observeGlobal(currentUserId: String, metric: LeaderboardMetric, limit: Int): Flow<List<LeaderboardEntry>>
 
     fun observeFriends(currentUserId: String, metric: LeaderboardMetric): Flow<List<LeaderboardEntry>>
 }
 
-/** Phase 5. Same story: schema is ready, screen comes later. */
 interface FriendRepository {
     fun observeFriends(userId: String): Flow<List<Friend>>
 

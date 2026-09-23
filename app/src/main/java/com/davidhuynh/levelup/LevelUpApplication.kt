@@ -5,7 +5,6 @@ import com.davidhuynh.levelup.di.AppContainer
 
 class LevelUpApplication : Application() {
 
-    /** The one place dependencies are constructed. Activities read it, nothing else. */
     lateinit var container: AppContainer
         private set
 

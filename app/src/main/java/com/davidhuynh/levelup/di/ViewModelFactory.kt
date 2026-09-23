@@ -18,12 +18,6 @@ import com.davidhuynh.levelup.ui.progress.ProgressViewModel
 import com.davidhuynh.levelup.ui.workout.detail.WorkoutDetailViewModel
 import com.davidhuynh.levelup.ui.workout.log.LogWorkoutViewModel
 
-/**
- * One factory for every ViewModel, built from the AppContainer.
- *
- * This is the cost of skipping Hilt: a list of constructors in one place. Worth it — the
- * list is explicit and a wrong wiring is a compile error rather than a runtime one.
- */
 fun levelUpViewModelFactory(container: AppContainer): ViewModelProvider.Factory = viewModelFactory {
 
     initializer { AuthViewModel(container.authRepository) }
@@ -116,10 +110,6 @@ fun levelUpViewModelFactory(container: AppContainer): ViewModelProvider.Factory 
     }
 }
 
-/**
- * Screen arguments are passed as CreationExtras rather than through SavedStateHandle so
- * the ViewModel constructors stay plain and testable.
- */
 val USER_ID_KEY = object : CreationExtras.Key<String> {}
 val WORKOUT_ID_KEY = object : CreationExtras.Key<String> {}
 val EXERCISE_ID_KEY = object : CreationExtras.Key<String> {}

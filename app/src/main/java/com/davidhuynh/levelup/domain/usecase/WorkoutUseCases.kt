@@ -5,10 +5,6 @@ import com.davidhuynh.levelup.data.repository.WorkoutRepositoryImpl
 import com.davidhuynh.levelup.domain.model.PrAward
 import com.davidhuynh.levelup.domain.util.DataResult
 
-/**
- * Validation that belongs to saving a workout, kept out of the ViewModel so it can be
- * tested without one.
- */
 class SaveWorkoutUseCase(private val repository: WorkoutRepositoryImpl) {
 
     suspend operator fun invoke(draft: WorkoutDraft): DataResult<Result> {

@@ -84,10 +84,6 @@ class WorkoutDetailViewModel(
     private val _deleted = MutableStateFlow(false)
     val deleted: StateFlow<Boolean> = _deleted.asStateFlow()
 
-    /**
-     * Deleting also rebuilds records and stats, so a record set in this workout drops back
-     * to the previous best rather than lingering.
-     */
     fun delete() {
         viewModelScope.launch {
             deleteWorkout(userId, workoutId)
@@ -159,8 +155,6 @@ fun WorkoutDetailScreen(
 
                 Spacer(Modifier.height(Spacing.md))
 
-                // Most sessions repeat a previous one, so this is the primary action here:
-                // it opens the log screen already filled in, dated today.
                 Button(
                     onClick = { onRepeat(workout.id) },
                     modifier = Modifier
@@ -250,7 +244,6 @@ private fun ExerciseDetailCard(exercise: WorkoutExercise, unit: WeightUnit) {
                 }
             }
 
-            // The best estimated 1RM in this session, for context on how hard it was.
             val bestEstimate = exercise.sets
                 .filter { it.countsAsWorking }
                 .mapNotNull { OneRepMax.epley(it.weightKg, it.reps) }

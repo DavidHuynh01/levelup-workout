@@ -90,7 +90,6 @@ fun EmptyState(
     }
 }
 
-/** Inline error banner. Sits above a form rather than vanishing as a toast would. */
 @Composable
 fun ErrorBanner(message: String?, modifier: Modifier = Modifier) {
     if (message.isNullOrBlank()) return
@@ -295,7 +294,6 @@ fun LevelUpTopBar(
     )
 }
 
-/** A dot badge for unread counts, used by the Friends tab in Phase 5. */
 @Composable
 fun CountBadge(count: Int, modifier: Modifier = Modifier) {
     if (count <= 0) return

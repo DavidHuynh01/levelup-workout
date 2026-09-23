@@ -1,10 +1,5 @@
 package com.davidhuynh.levelup.domain.model
 
-/**
- * Leaderboard and friend models. Phases 4 and 5 build the screens; the models and the
- * tables behind them exist from v1 so neither phase needs a schema migration.
- */
-
 enum class LeaderboardMetric(val label: String) {
     TOTAL_VOLUME("Total volume"),
     CURRENT_STREAK("Current streak"),

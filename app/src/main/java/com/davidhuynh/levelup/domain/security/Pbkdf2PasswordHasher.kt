@@ -6,20 +6,6 @@ import java.util.Base64
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
 
-/**
- * PBKDF2-HMAC-SHA256, from the platform's own crypto provider.
- *
- * Chosen over a BCrypt library because it needs no extra dependency and no native code:
- * PBKDF2WithHmacSHA256 has shipped since API 26 and this app's minimum is 29.
- *
- * Deliberate choices worth keeping:
- *  - java.util.Base64, not android.util.Base64. The Android one is an unimplemented stub
- *    under plain JVM unit tests, which would make this class untestable off-device.
- *  - MessageDigest.isEqual for comparison, so verification takes the same time whether the
- *    first byte is wrong or only the last one is.
- *  - The iteration count is stored per account, so it can be raised later and existing
- *    accounts upgraded on their next successful sign-in.
- */
 class Pbkdf2PasswordHasher(
     private val iterations: Int = DEFAULT_ITERATIONS,
     private val random: SecureRandom = SecureRandom(),
@@ -56,7 +42,6 @@ class Pbkdf2PasswordHasher(
     private companion object {
         const val ALGORITHM = "PBKDF2WithHmacSHA256"
 
-        /** Roughly 100-250 ms on the emulator, so hashing must not run on the main thread. */
         const val DEFAULT_ITERATIONS = 120_000
         const val SALT_BYTES = 16
         const val KEY_BITS = 256

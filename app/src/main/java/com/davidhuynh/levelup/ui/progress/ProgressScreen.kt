@@ -48,7 +48,7 @@ data class ProgressUiState(
     val weightUnit: WeightUnit = WeightUnit.LB,
     val isLoading: Boolean = true,
 ) {
-    /** One card per exercise, each listing whichever record types it holds. */
+
     val recordsByExercise: List<Pair<String, List<PersonalRecord>>>
         get() = records
             .groupBy { it.exerciseName }

@@ -18,7 +18,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 
-/** Gym-floor palette: near-black surfaces with a single bright accent for progress. */
 private val Lime = Color(0xFF7AE582)
 private val LimeDark = Color(0xFF34A853)
 private val Ink = Color(0xFF12131A)
@@ -32,13 +31,6 @@ private val Crimson = Color(0xFFE5484D)
 val StreakOrange = Flame
 val AccentLime = Lime
 
-/**
- * Chart marks get their own greens rather than reusing the UI accent.
- *
- * Both steps were checked with the palette validator against their own surface: the UI
- * lime sits at OKLCH L 0.83, too light to read as a data mark on the dark surface, and
- * the light-mode accent lands just under 3:1 contrast. These two pass on both counts.
- */
 private val ChartGreenLight = Color(0xFF2E9749)
 private val ChartGreenDark = Color(0xFF3FA857)
 

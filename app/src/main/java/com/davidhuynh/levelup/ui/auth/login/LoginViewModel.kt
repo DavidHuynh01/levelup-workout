@@ -35,10 +35,6 @@ class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
         _state.update { it.copy(password = value, passwordError = null, formError = null) }
     }
 
-    /**
-     * On success nothing is navigated from here: saving the session makes AuthViewModel
-     * emit Authenticated, and the graph follows. One source of truth for "signed in".
-     */
     fun submit() {
         val current = _state.value
         if (!current.canSubmit) return
@@ -110,8 +106,7 @@ class SignUpViewModel(private val authRepository: AuthRepository) : ViewModel() 
             when (result) {
                 is DataResult.Success -> _state.update { it.copy(isSubmitting = false) }
                 is DataResult.Failure -> _state.update { state ->
-                    // The failure names the field it belongs to, so the message lands under
-                    // the input that caused it instead of in a generic banner.
+
                     when (result.field) {
                         "displayName" -> state.copy(isSubmitting = false, nameError = result.message)
                         "email" -> state.copy(isSubmitting = false, emailError = result.message)

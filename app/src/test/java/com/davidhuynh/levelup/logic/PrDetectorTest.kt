@@ -82,8 +82,8 @@ class PrDetectorTest {
     fun `a heavy single beats a light high rep set on one rep max`() {
         val history = PrDetector.buildHistory(
             listOf(
-                prSet("s1", reps = 12, weightKg = 80.0, day = "2026-03-01"), // est 112
-                prSet("s2", reps = 1, weightKg = 130.0, day = "2026-03-08"), // est 130
+                prSet("s1", reps = 12, weightKg = 80.0, day = "2026-03-01"),
+                prSet("s2", reps = 1, weightKg = 130.0, day = "2026-03-08"),
             )
         )
         assertEquals(130.0, PrDetector.currentRecords(history)[PrType.MAX_ESTIMATED_1RM]!!.value, 0.0001)
@@ -127,7 +127,6 @@ class PrDetectorTest {
         assertEquals(1000.0, chain[1].value, 0.0001)
     }
 
-    /** The case a patch-on-insert design gets wrong: the record has to come back down. */
     @Test
     fun `removing the best set rebuilds the chain at the previous best`() {
         val all = listOf(
@@ -146,7 +145,6 @@ class PrDetectorTest {
         assertTrue(PrDetector.buildHistory(emptyList()).isEmpty())
     }
 
-    /** Back-dating reorders which achievement came first, so the chain must be rebuilt. */
     @Test
     fun `a backdated heavier set takes over the start of the chain`() {
         val history = PrDetector.buildHistory(
@@ -157,7 +155,6 @@ class PrDetectorTest {
         )
         val chain = history.filter { it.recordType == PrType.MAX_WEIGHT }.sortedBy { it.achievedAt }
 
-        // The back-dated 130 came first chronologically, so the later 110 never set a record.
         assertEquals(1, chain.size)
         assertEquals("backdated", chain.single().setId)
         assertEquals(130.0, chain.single().value, 0.0001)

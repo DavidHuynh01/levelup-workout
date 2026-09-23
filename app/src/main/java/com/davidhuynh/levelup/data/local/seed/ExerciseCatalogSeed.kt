@@ -3,11 +3,6 @@ package com.davidhuynh.levelup.data.local.seed
 import com.davidhuynh.levelup.data.local.entity.ExerciseEntity
 import com.davidhuynh.levelup.domain.model.MuscleGroup
 
-/**
- * The built-in exercise list. Ids are fixed strings rather than random UUIDs so the same
- * movement keeps the same id across installs, which keeps demo data and any future remote
- * sync from creating duplicates.
- */
 object ExerciseCatalogSeed {
 
     fun exercises(createdAt: Long): List<ExerciseEntity> = RAW.map { (name, group, equipment) ->
@@ -22,7 +17,6 @@ object ExerciseCatalogSeed {
         )
     }
 
-    /** Named ids for the demo data, so it can reference specific lifts. */
     fun idOf(name: String): String =
         "builtin-" + name.lowercase().replace(Regex("[^a-z0-9]+"), "-")
 

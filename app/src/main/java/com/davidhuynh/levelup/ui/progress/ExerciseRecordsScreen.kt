@@ -49,7 +49,7 @@ data class ExerciseRecordsUiState(
     val weightUnit: WeightUnit = WeightUnit.LB,
     val isLoading: Boolean = true,
 ) {
-    /** Newest first within each type, so the standing record heads its own list. */
+
     val byType: List<Pair<PrType, List<PersonalRecord>>>
         get() = records
             .groupBy { it.recordType }
@@ -82,12 +82,6 @@ class ExerciseRecordsViewModel(
 
 private val dateFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
 
-/**
- * The full record history for one exercise, beaten records included.
- *
- * Superseded rows are kept rather than deleted, so this timeline comes for free and shows
- * progress over months rather than only the current best.
- */
 @Composable
 fun ExerciseRecordsScreen(
     viewModel: ExerciseRecordsViewModel,

@@ -61,7 +61,6 @@ data class LeaderboardUiState(
 ) {
     val currentUserEntry: LeaderboardEntry? get() = entries.firstOrNull { it.isCurrentUser }
 
-    /** A friends board holding only you means there is nobody to compete with yet. */
     val friendsBoardIsEmpty: Boolean
         get() = scope == LeaderboardScope.FRIENDS && entries.size <= 1
 }
@@ -145,8 +144,6 @@ fun LeaderboardScreen(
             }
         }
 
-        // The scope and metric controls stay put while the list below them swaps, so
-        // switching boards does not make the whole screen jump.
         when {
             state.isLoading -> LoadingScreen()
 
@@ -181,7 +178,7 @@ private fun LeaderboardRowCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            // Your own row is tinted so it is findable without scrolling for your name.
+
             containerColor = if (entry.isCurrentUser) {
                 MaterialTheme.colorScheme.primaryContainer
             } else {

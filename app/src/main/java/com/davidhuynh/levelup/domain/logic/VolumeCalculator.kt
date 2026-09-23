@@ -4,12 +4,6 @@ import com.davidhuynh.levelup.domain.model.ExerciseSet
 import com.davidhuynh.levelup.domain.model.Workout
 import com.davidhuynh.levelup.domain.model.WorkoutExercise
 
-/**
- * Volume is reps x weight, summed over working sets.
- *
- * Bodyweight sets (0 kg) are legal and contribute no volume, but they still count as
- * sets performed and can still set rep-based records.
- */
 object VolumeCalculator {
 
     fun setVolumeKg(set: ExerciseSet): Double =

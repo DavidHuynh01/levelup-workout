@@ -3,13 +3,11 @@ package com.davidhuynh.levelup.domain.model
 import java.time.LocalDate
 
 enum class PrType(val label: String, val shortLabel: String) {
-    /** Heaviest working set ever performed on this exercise. */
+
     MAX_WEIGHT("Heaviest weight", "Weight"),
 
-    /** Best Epley-estimated one-rep max, from sets of 1 to 12 reps. */
     MAX_ESTIMATED_1RM("Estimated 1RM", "1RM"),
 
-    /** Most volume accumulated on this exercise within a single workout. */
     MAX_SESSION_VOLUME("Best session volume", "Volume"),
 }
 
@@ -26,13 +24,12 @@ data class PersonalRecord(
     val achievedOnLocalDate: LocalDate,
     val workoutId: String?,
     val setId: String?,
-    /** Null means this is the record that currently stands. */
+
     val supersededAt: Long? = null,
 ) {
     val isCurrent: Boolean get() = supersededAt == null
 }
 
-/** A record broken by the workout that was just saved, used for the celebration dialog. */
 data class PrAward(
     val exerciseId: String,
     val exerciseName: String,

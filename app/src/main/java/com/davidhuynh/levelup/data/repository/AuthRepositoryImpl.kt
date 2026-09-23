@@ -28,16 +28,12 @@ class AuthRepositoryImpl(
     private val tokens: TokenGenerator,
     private val clock: AppClock,
     private val statsRecomputer: DerivedDataRecomputer,
-    /** Key derivation is deliberately slow, so it never runs on the main thread. */
+
     private val cryptoDispatcher: CoroutineDispatcher = Dispatchers.Default,
-    /** Debug builds use this to give a new account something to interact with. */
+
     private val onUserCreated: suspend (String) -> Unit = {},
 ) : AuthRepository {
 
-    /**
-     * A session whose user has been deleted is treated as no session at all, rather than
-     * letting the app open onto a home screen belonging to nobody.
-     */
     override val session: Flow<Session?> = sessionStore.session.map { stored ->
         if (stored == null) return@map null
         if (userDao.findById(stored.userId) == null) {
@@ -96,7 +92,7 @@ class AuthRepositoryImpl(
             startSession(entity.id)
             DataResult.Success(entity.toDomain())
         } catch (e: android.database.sqlite.SQLiteConstraintException) {
-            // Lost a race against another signup with the same email.
+
             DataResult.Failure("An account with that email already exists", FIELD_EMAIL)
         }
     }
@@ -114,8 +110,6 @@ class AuthRepositoryImpl(
         val matches = withContext(cryptoDispatcher) { hasher.verify(password, stored) }
         if (!matches) return DataResult.Failure(INVALID_CREDENTIALS)
 
-        // Accounts created under weaker settings are upgraded the next time they sign in,
-        // which is the only moment the plaintext is available to re-derive from.
         if (hasher.needsRehash(stored)) {
             val upgraded = withContext(cryptoDispatcher) { hasher.hash(password) }
             userDao.update(
@@ -132,7 +126,7 @@ class AuthRepositoryImpl(
     }
 
     override suspend fun signOut() {
-        // Only the session is cleared. Workout history stays, so signing back in restores it.
+
         sessionStore.clear()
     }
 

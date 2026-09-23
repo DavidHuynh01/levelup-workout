@@ -56,7 +56,6 @@ class LeaderboardRankerTest {
         assertEquals("collector", LeaderboardRanker.rank(rows, LeaderboardMetric.PR_COUNT, "x").first().userId)
     }
 
-    /** Two people on the same number should not be told one of them is behind the other. */
     @Test
     fun `equal scores share a rank`() {
         val ranked = LeaderboardRanker.rank(
