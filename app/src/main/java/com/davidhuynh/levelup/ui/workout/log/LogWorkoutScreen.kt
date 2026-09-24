@@ -31,6 +31,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -397,8 +398,19 @@ private fun WorkoutDatePicker(
     onPick: (LocalDate) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val todayUtcMillis = remember {
+        LocalDate.now().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+    }
+    val pastOrToday = remember(todayUtcMillis) {
+        object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis <= todayUtcMillis
+            override fun isSelectableYear(year: Int) = year <= LocalDate.now().year
+        }
+    }
+
     val pickerState = rememberDatePickerState(
         initialSelectedDateMillis = initial.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
+        selectableDates = pastOrToday,
     )
 
     DatePickerDialog(

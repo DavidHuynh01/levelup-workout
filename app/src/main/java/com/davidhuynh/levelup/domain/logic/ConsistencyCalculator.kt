@@ -9,7 +9,7 @@ object ConsistencyCalculator {
 
     fun workoutsThisWeek(workoutDates: Collection<LocalDate>, today: LocalDate): Int {
         val start = startOfWeek(today)
-        val end = start.plusDays(6)
+        val end = minOf(start.plusDays(6), today)
         return workoutDates.distinct().count { it >= start && it <= end }
     }
 

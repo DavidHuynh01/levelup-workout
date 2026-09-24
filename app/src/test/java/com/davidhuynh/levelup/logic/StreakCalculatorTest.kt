@@ -100,6 +100,43 @@ class StreakCalculatorTest {
         val days = listOf(day("2026-03-01"), day("2026-03-14"), day("2026-03-07"))
         assertEquals(day("2026-03-14"), StreakCalculator.calculate(days, today).lastWorkoutDate)
     }
+
+    @Test
+    fun `a workout dated in the future does not break a live streak`() {
+        val days = listOf(day("2026-03-14"), today, day("2026-03-20"))
+        val result = StreakCalculator.calculate(days, today)
+        assertEquals(2, result.currentStreakDays)
+    }
+
+    @Test
+    fun `future dates do not count toward the longest streak`() {
+        val days = listOf(today, day("2026-03-20"), day("2026-03-21"), day("2026-03-22"))
+        assertEquals(1, StreakCalculator.calculate(days, today).longestStreakDays)
+    }
+
+    @Test
+    fun `the last workout date ignores anything in the future`() {
+        val days = listOf(day("2026-03-14"), day("2026-03-25"))
+        assertEquals(day("2026-03-14"), StreakCalculator.calculate(days, today).lastWorkoutDate)
+    }
+
+    @Test
+    fun `a history of only future dates reads as no training yet`() {
+        val result = StreakCalculator.calculate(listOf(day("2026-04-01")), today)
+        assertEquals(0, result.currentStreakDays)
+        assertEquals(0, result.longestStreakDays)
+        assertNull(result.lastWorkoutDate)
+    }
+}
+
+class ConsistencyFutureDateTest {
+
+    @Test
+    fun `days later this week are not counted as done`() {
+        val wednesday = day("2026-03-11")
+        val days = listOf(day("2026-03-09"), wednesday, day("2026-03-13"))
+        assertEquals(2, ConsistencyCalculator.workoutsThisWeek(days, wednesday))
+    }
 }
 
 class ConsistencyCalculatorTest {

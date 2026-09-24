@@ -6,11 +6,11 @@ import java.time.LocalDate
 object StreakCalculator {
 
     fun calculate(workoutDates: Collection<LocalDate>, today: LocalDate): StreakInfo {
-        if (workoutDates.isEmpty()) {
+        val days = workoutDates.distinct().filter { it <= today }.sortedDescending()
+        if (days.isEmpty()) {
             return StreakInfo(currentStreakDays = 0, longestStreakDays = 0, lastWorkoutDate = null)
         }
 
-        val days = workoutDates.distinct().sortedDescending()
         val mostRecent = days.first()
 
         val current = if (mostRecent == today || mostRecent == today.minusDays(1)) {
