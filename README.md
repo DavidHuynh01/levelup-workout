@@ -18,6 +18,7 @@ All six phases are built and running on a device.
 | 4 | Global and friends leaderboards | Done |
 | 5 | Friend requests with an in-app badge | Done |
 | 6 | Profile editing, record history, empty and loading states | Done |
+| - | Accessibility, account management, CI, release pipeline | Done |
 
 ## Features
 
@@ -50,6 +51,12 @@ All six phases are built and running on a device.
 - **CSV export** — Profile exports the whole history as CSV, one row per set, and hands it
   to the share sheet. Free-text names are quoted per RFC 4180, so a workout called
   `Push, heavy` cannot shift the columns.
+- **Account management** — change your password (the current one must verify, and the new
+  one must pass the same policy as signup) or delete your account, which takes its workouts,
+  records, stats and friendships with it.
+- **Accessibility** — every control carries a spoken label, decorative emoji are hidden from
+  screen readers rather than read aloud twice, and the progress chart describes its own
+  series.
 - **Units** — weights are stored in kilograms and displayed in pounds or kilograms; the
   toggle in Profile never rewrites stored data.
 
@@ -141,6 +148,37 @@ request flow.
 
 Debug builds also give a new account two pending friend requests from demo lifters, so the
 accept and decline paths have something to act on.
+
+## Releases
+
+`.github/workflows/ci.yml` runs the unit tests and builds a debug APK on every push to
+main, and adds the emulator-backed Room tests on pull requests.
+
+`.github/workflows/release.yml` builds a minified, signed release APK when you push a tag
+like `v1.0` and attaches it to a GitHub Release. Signing is optional — without the secrets
+below the build still succeeds and produces an unsigned APK.
+
+To sign releases, generate a keystore once:
+
+```powershell
+& "C:\Program Files\Android\Android Studio\jbrin\keytool.exe" -genkeypair -v `
+  -keystore levelup.jks -keyalg RSA -keysize 2048 -validity 10000 -alias levelup
+```
+
+Keep that file out of the repo. Then add four repository secrets in GitHub under
+Settings, Secrets and variables, Actions:
+
+| Secret | Value |
+|---|---|
+| `KEYSTORE_BASE64` | the keystore base64-encoded: `base64 -w0 levelup.jks` |
+| `KEYSTORE_PASSWORD` | the store password |
+| `KEY_ALIAS` | `levelup` |
+| `KEY_PASSWORD` | the key password |
+
+Locally, the same build reads `LEVELUP_KEYSTORE`, `LEVELUP_KEYSTORE_PASSWORD`,
+`LEVELUP_KEY_ALIAS` and `LEVELUP_KEY_PASSWORD` from the environment.
+
+Release builds run R8 with resource shrinking, which brings the APK to about 3 MB.
 
 ## Notes
 
