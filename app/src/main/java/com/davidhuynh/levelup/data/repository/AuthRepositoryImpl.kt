@@ -157,15 +157,78 @@ class AuthRepositoryImpl(
         return DataResult.Success(updated.toDomain())
     }
 
+    override suspend fun changePassword(
+        userId: String,
+        currentPassword: String,
+        newPassword: String,
+        confirmPassword: String,
+    ): DataResult<Unit> {
+        val user = userDao.findById(userId) ?: return DataResult.Failure(ACCOUNT_NOT_FOUND)
+
+        if (currentPassword.isEmpty()) {
+            return DataResult.Failure("Enter your current password", FIELD_CURRENT)
+        }
+
+        val stored = PasswordHash(user.passwordHash, user.passwordSalt, user.passwordIterations)
+        val matches = withContext(cryptoDispatcher) { hasher.verify(currentPassword, stored) }
+        if (!matches) {
+            return DataResult.Failure("That is not your current password", FIELD_CURRENT)
+        }
+
+        val violations = PasswordPolicy.validate(newPassword)
+        if (violations.isNotEmpty()) {
+            return DataResult.Failure(violations.joinToString("\n") { it.message }, FIELD_NEW)
+        }
+        if (newPassword == currentPassword) {
+            return DataResult.Failure("Choose a password you are not already using", FIELD_NEW)
+        }
+        if (newPassword != confirmPassword) {
+            return DataResult.Failure("Passwords do not match", FIELD_CONFIRM)
+        }
+
+        val hashed = withContext(cryptoDispatcher) { hasher.hash(newPassword) }
+        userDao.update(
+            user.copy(
+                passwordHash = hashed.hash,
+                passwordSalt = hashed.salt,
+                passwordIterations = hashed.iterations,
+            )
+        )
+
+        sessionStore.touch()
+        return DataResult.Success(Unit)
+    }
+
+    override suspend fun deleteAccount(userId: String, password: String): DataResult<Unit> {
+        val user = userDao.findById(userId) ?: return DataResult.Failure(ACCOUNT_NOT_FOUND)
+
+        if (password.isEmpty()) {
+            return DataResult.Failure("Enter your password to confirm", FIELD_PASSWORD)
+        }
+
+        val stored = PasswordHash(user.passwordHash, user.passwordSalt, user.passwordIterations)
+        val matches = withContext(cryptoDispatcher) { hasher.verify(password, stored) }
+        if (!matches) {
+            return DataResult.Failure("Incorrect password", FIELD_PASSWORD)
+        }
+
+        userDao.deleteById(userId)
+        sessionStore.clear()
+        return DataResult.Success(Unit)
+    }
+
     private suspend fun startSession(userId: String) {
         sessionStore.save(userId, tokens.newSessionToken())
     }
 
     private companion object {
         const val INVALID_CREDENTIALS = "Incorrect email or password"
+        const val ACCOUNT_NOT_FOUND = "Account not found"
         const val FIELD_NAME = "displayName"
         const val FIELD_EMAIL = "email"
         const val FIELD_PASSWORD = "password"
         const val FIELD_CONFIRM = "confirmPassword"
+        const val FIELD_CURRENT = "currentPassword"
+        const val FIELD_NEW = "newPassword"
     }
 }

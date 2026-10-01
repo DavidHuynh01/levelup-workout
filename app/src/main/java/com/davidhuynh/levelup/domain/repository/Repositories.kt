@@ -39,6 +39,15 @@ interface AuthRepository {
     suspend fun updateWeightUnit(userId: String, unit: WeightUnit)
 
     suspend fun updateProfile(userId: String, displayName: String, avatarEmoji: String?): DataResult<User>
+
+    suspend fun changePassword(
+        userId: String,
+        currentPassword: String,
+        newPassword: String,
+        confirmPassword: String,
+    ): DataResult<Unit>
+
+    suspend fun deleteAccount(userId: String, password: String): DataResult<Unit>
 }
 
 interface ExerciseRepository {

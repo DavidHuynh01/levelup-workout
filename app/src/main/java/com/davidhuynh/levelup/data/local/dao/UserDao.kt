@@ -28,6 +28,9 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE id = :userId LIMIT 1")
     fun observeById(userId: String): Flow<UserEntity?>
 
+    @Query("DELETE FROM users WHERE id = :userId")
+    suspend fun deleteById(userId: String): Int
+
     @Query("SELECT EXISTS(SELECT 1 FROM users WHERE email = :email)")
     suspend fun emailExists(email: String): Boolean
 

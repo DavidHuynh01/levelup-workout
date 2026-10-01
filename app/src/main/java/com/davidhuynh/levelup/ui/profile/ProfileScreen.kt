@@ -33,12 +33,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.davidhuynh.levelup.data.export.WorkoutExporter
+import com.davidhuynh.levelup.domain.logic.PasswordPolicy
 import com.davidhuynh.levelup.domain.logic.WeightConverter
 import com.davidhuynh.levelup.domain.model.User
 import com.davidhuynh.levelup.domain.model.UserStats
@@ -49,6 +51,7 @@ import com.davidhuynh.levelup.domain.util.DataResult
 import com.davidhuynh.levelup.ui.common.CountBadge
 import com.davidhuynh.levelup.ui.common.KeyValueRow
 import com.davidhuynh.levelup.ui.common.LoadingScreen
+import com.davidhuynh.levelup.ui.common.PasswordField
 import com.davidhuynh.levelup.ui.common.SectionHeader
 import com.davidhuynh.levelup.ui.theme.Spacing
 import kotlinx.coroutines.flow.SharingStarted
@@ -120,6 +123,54 @@ class ProfileViewModel(
     fun clearExport() { _export.value = ExportState.Idle }
 
     fun shareIntent(export: WorkoutExporter.Export) = exporter.shareIntent(export)
+
+    private val _passwordChange = MutableStateFlow<PasswordChangeState>(PasswordChangeState.Idle)
+    val passwordChange: StateFlow<PasswordChangeState> = _passwordChange.asStateFlow()
+
+    fun changePassword(
+        currentPassword: String,
+        newPassword: String,
+        confirmPassword: String,
+        onDone: () -> Unit,
+    ) {
+        if (_passwordChange.value is PasswordChangeState.Working) return
+        _passwordChange.value = PasswordChangeState.Working
+        viewModelScope.launch {
+            when (
+                val result = authRepository.changePassword(
+                    userId = userId,
+                    currentPassword = currentPassword,
+                    newPassword = newPassword,
+                    confirmPassword = confirmPassword,
+                )
+            ) {
+                is DataResult.Success -> {
+                    _passwordChange.value = PasswordChangeState.Idle
+                    onDone()
+                }
+                is DataResult.Failure ->
+                    _passwordChange.value = PasswordChangeState.Failed(result.message, result.field)
+            }
+        }
+    }
+
+    fun clearPasswordChange() { _passwordChange.value = PasswordChangeState.Idle }
+
+    private val _deletion = MutableStateFlow<DeleteAccountState>(DeleteAccountState.Idle)
+    val deletion: StateFlow<DeleteAccountState> = _deletion.asStateFlow()
+
+    fun deleteAccount(password: String) {
+        if (_deletion.value is DeleteAccountState.Working) return
+        _deletion.value = DeleteAccountState.Working
+        viewModelScope.launch {
+            _deletion.value = when (val result = authRepository.deleteAccount(userId, password)) {
+                is DataResult.Success -> DeleteAccountState.Idle
+                is DataResult.Failure -> DeleteAccountState.Failed(result.message)
+            }
+        }
+    }
+
+    fun clearDeletion() { _deletion.value = DeleteAccountState.Idle }
 }
 
 sealed interface ExportState {
@@ -127,6 +178,18 @@ sealed interface ExportState {
     data object Working : ExportState
     data class Ready(val export: WorkoutExporter.Export) : ExportState
     data class Failed(val message: String) : ExportState
+}
+
+sealed interface PasswordChangeState {
+    data object Idle : PasswordChangeState
+    data object Working : PasswordChangeState
+    data class Failed(val message: String, val field: String?) : PasswordChangeState
+}
+
+sealed interface DeleteAccountState {
+    data object Idle : DeleteAccountState
+    data object Working : DeleteAccountState
+    data class Failed(val message: String) : DeleteAccountState
 }
 
 private val AVATAR_CHOICES = listOf(
@@ -147,10 +210,14 @@ fun ProfileScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val editError by viewModel.editError.collectAsStateWithLifecycle()
     val exportState by viewModel.export.collectAsStateWithLifecycle()
+    val passwordChange by viewModel.passwordChange.collectAsStateWithLifecycle()
+    val deletion by viewModel.deletion.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val user = state.user
     val unit = user?.weightUnit ?: WeightUnit.LB
     var isEditing by remember { mutableStateOf(false) }
+    var isChangingPassword by remember { mutableStateOf(false) }
+    var isDeleting by remember { mutableStateOf(false) }
 
     if (state.isLoading) {
         LoadingScreen()
@@ -284,6 +351,28 @@ fun ProfileScreen(
             }
         }
 
+        SectionHeader("Account")
+
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+            Column(modifier = Modifier.padding(Spacing.md)) {
+                Text("Change password", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = "You stay signed in on this device.",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                OutlinedButton(
+                    onClick = { isChangingPassword = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = Spacing.sm),
+                ) {
+                    Text("Change password")
+                }
+            }
+        }
+
         SectionHeader("Units")
 
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
@@ -315,6 +404,23 @@ fun ProfileScreen(
             modifier = Modifier.padding(top = Spacing.sm),
         )
 
+        Spacer(Modifier.height(Spacing.lg))
+
+        OutlinedButton(
+            onClick = { isDeleting = true },
+            enabled = deletion !is DeleteAccountState.Working,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Delete account", color = MaterialTheme.colorScheme.error)
+        }
+
+        Text(
+            text = "Deleting erases your workouts, records, friends and this account for good. It cannot be undone.",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = Spacing.sm),
+        )
+
         Spacer(Modifier.height(Spacing.xl))
     }
 
@@ -332,7 +438,149 @@ fun ProfileScreen(
             },
         )
     }
+
+    if (isChangingPassword) {
+        ChangePasswordDialog(
+            state = passwordChange,
+            onDismiss = {
+                isChangingPassword = false
+                viewModel.clearPasswordChange()
+            },
+            onSubmit = { current, new, confirm ->
+                viewModel.changePassword(current, new, confirm) { isChangingPassword = false }
+            },
+        )
+    }
+
+    if (isDeleting) {
+        DeleteAccountDialog(
+            state = deletion,
+            onDismiss = {
+                isDeleting = false
+                viewModel.clearDeletion()
+            },
+            onConfirm = viewModel::deleteAccount,
+        )
+    }
 }
+
+@Composable
+private fun ChangePasswordDialog(
+    state: PasswordChangeState,
+    onDismiss: () -> Unit,
+    onSubmit: (String, String, String) -> Unit,
+) {
+    var current by remember { mutableStateOf("") }
+    var new by remember { mutableStateOf("") }
+    var confirm by remember { mutableStateOf("") }
+
+    val failure = state as? PasswordChangeState.Failed
+    val working = state is PasswordChangeState.Working
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Change password") },
+        text = {
+            Column {
+                PasswordField(
+                    value = current,
+                    onValueChange = { current = it },
+                    label = "Current password",
+                    error = failure?.messageFor(FIELD_CURRENT_PASSWORD),
+                )
+                Spacer(Modifier.height(Spacing.md))
+
+                PasswordField(
+                    value = new,
+                    onValueChange = { new = it },
+                    label = "New password",
+                    error = failure?.messageFor(FIELD_NEW_PASSWORD),
+                    strength = PasswordPolicy.strength(new),
+                )
+                Spacer(Modifier.height(Spacing.md))
+
+                PasswordField(
+                    value = confirm,
+                    onValueChange = { confirm = it },
+                    label = "Confirm new password",
+                    error = failure?.messageFor(FIELD_CONFIRM_PASSWORD),
+                    imeAction = ImeAction.Done,
+                )
+
+                if (failure != null && failure.field == null) {
+                    Text(
+                        text = failure.message,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(top = Spacing.sm),
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onSubmit(current, new, confirm) },
+                enabled = !working &&
+                    current.isNotEmpty() &&
+                    new.isNotEmpty() &&
+                    confirm.isNotEmpty(),
+            ) { Text(if (working) "Saving…" else "Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
+@Composable
+private fun DeleteAccountDialog(
+    state: DeleteAccountState,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    var password by remember { mutableStateOf("") }
+    val working = state is DeleteAccountState.Working
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Delete account") },
+        text = {
+            Column {
+                Text(
+                    text = "This erases your workouts, records and friends on this device. " +
+                        "Enter your password to confirm.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Spacer(Modifier.height(Spacing.md))
+
+                PasswordField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = "Password",
+                    error = (state as? DeleteAccountState.Failed)?.message,
+                    imeAction = ImeAction.Done,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(password) },
+                enabled = !working && password.isNotEmpty(),
+            ) {
+                Text(
+                    text = if (working) "Deleting…" else "Delete forever",
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
+private fun PasswordChangeState.Failed.messageFor(target: String): String? =
+    message.takeIf { field == target }
+
+private const val FIELD_CURRENT_PASSWORD = "currentPassword"
+private const val FIELD_NEW_PASSWORD = "newPassword"
+private const val FIELD_CONFIRM_PASSWORD = "confirmPassword"
 
 @Composable
 private fun EditProfileDialog(
