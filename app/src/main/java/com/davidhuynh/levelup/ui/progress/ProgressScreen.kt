@@ -19,6 +19,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -102,11 +106,17 @@ fun ProgressScreen(
             Text(
                 text = "Progress",
                 style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(top = Spacing.lg, bottom = Spacing.md),
+                modifier = Modifier
+                    .padding(top = Spacing.lg, bottom = Spacing.md)
+                    .semantics { heading() },
             )
             StreakCard(stats = state.stats, unit = state.weightUnit)
             Spacer(Modifier.height(Spacing.lg))
-            Text(text = "Personal records", style = MaterialTheme.typography.titleLarge)
+            Text(
+                text = "Personal records",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.semantics { heading() },
+            )
             Spacer(Modifier.height(Spacing.sm))
         }
 
@@ -146,7 +156,12 @@ private fun StreakCard(stats: UserStats, unit: WeightUnit) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column {
+                Column(
+                    modifier = Modifier.semantics(mergeDescendants = true) {
+                        contentDescription = "${stats.currentStreakDays} day streak, " +
+                            "longest ${stats.longestStreakDays} days"
+                    },
+                ) {
                     Text(
                         text = "🔥 ${stats.currentStreakDays} day streak",
                         style = MaterialTheme.typography.titleLarge,
@@ -162,7 +177,12 @@ private fun StreakCard(stats: UserStats, unit: WeightUnit) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                Column(horizontalAlignment = Alignment.End) {
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    modifier = Modifier.semantics(mergeDescendants = true) {
+                        contentDescription = "${stats.workoutsThisWeek} workouts this week"
+                    },
+                ) {
                     Text(
                         text = "${stats.workoutsThisWeek}",
                         style = MaterialTheme.typography.headlineSmall,
@@ -193,7 +213,11 @@ private fun StreakCard(stats: UserStats, unit: WeightUnit) {
 
 @Composable
 private fun MiniStat(label: String, value: String) {
-    Column {
+    Column(
+        modifier = Modifier.semantics(mergeDescendants = true) {
+            contentDescription = "$label, $value"
+        },
+    ) {
         Text(
             text = value,
             style = MaterialTheme.typography.titleMedium,
@@ -216,7 +240,11 @@ private fun ExerciseRecordCard(
 ) {
     Card(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics {
+                contentDescription = recordCardDescription(exerciseName, records, unit)
+            },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Column(modifier = Modifier.padding(Spacing.md)) {
@@ -230,6 +258,7 @@ private fun ExerciseRecordCard(
                     text = "History ›",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.clearAndSetSemantics { },
                 )
             }
             Spacer(Modifier.height(Spacing.sm))
@@ -276,6 +305,18 @@ private fun RecordTypeBadge(type: PrType) {
             modifier = Modifier.padding(horizontal = Spacing.sm, vertical = Spacing.xs),
         )
     }
+}
+
+private fun recordCardDescription(
+    exerciseName: String,
+    records: List<PersonalRecord>,
+    unit: WeightUnit,
+): String {
+    val lines = records.sortedBy { it.recordType.ordinal }.map { record ->
+        "${record.recordType.label}, ${recordValue(record, unit)}, set on " +
+            record.achievedOnLocalDate.format(recordDateFormat)
+    }
+    return (listOf(exerciseName) + lines + "Open record history").joinToString(". ")
 }
 
 private fun recordValue(record: PersonalRecord, unit: WeightUnit): String = when (record.recordType) {

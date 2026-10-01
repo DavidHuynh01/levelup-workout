@@ -19,6 +19,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -47,7 +50,9 @@ fun LoginScreen(
         Text(
             text = "🏋️",
             style = MaterialTheme.typography.displaySmall,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clearAndSetSemantics { },
             textAlign = TextAlign.Center,
         )
         Text(
@@ -55,7 +60,8 @@ fun LoginScreen(
             style = MaterialTheme.typography.displaySmall,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = Spacing.sm),
+                .padding(top = Spacing.sm)
+                .semantics { heading() },
             textAlign = TextAlign.Center,
         )
         Text(
@@ -135,7 +141,11 @@ fun SignUpScreen(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.Start,
     ) {
-        Text(text = "Create your account", style = MaterialTheme.typography.headlineMedium)
+        Text(
+            text = "Create your account",
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.semantics { heading() },
+        )
         Text(
             text = "Your workouts stay on this device.",
             style = MaterialTheme.typography.bodyMedium,

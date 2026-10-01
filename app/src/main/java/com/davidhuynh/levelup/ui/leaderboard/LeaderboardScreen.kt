@@ -26,6 +26,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -112,7 +116,9 @@ fun LeaderboardScreen(
         Text(
             text = "Leaderboard",
             style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(start = Spacing.md, top = Spacing.lg, bottom = Spacing.md),
+            modifier = Modifier
+                .padding(start = Spacing.md, top = Spacing.lg, bottom = Spacing.md)
+                .semantics { heading() },
         )
 
         SingleChoiceSegmentedButtonRow(
@@ -176,7 +182,11 @@ private fun LeaderboardRowCard(
     unit: WeightUnit,
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {
+                contentDescription = rowDescription(entry, metric, unit)
+            },
         colors = CardDefaults.cardColors(
 
             containerColor = if (entry.isCurrentUser) {
@@ -198,6 +208,7 @@ private fun LeaderboardRowCard(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
+                    modifier = Modifier.clearAndSetSemantics { },
                 )
             }
 
@@ -206,7 +217,8 @@ private fun LeaderboardRowCard(
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier
                     .size(32.dp)
-                    .padding(end = Spacing.sm),
+                    .padding(end = Spacing.sm)
+                    .clearAndSetSemantics { },
             )
 
             Column(modifier = Modifier.weight(1f)) {
@@ -230,6 +242,23 @@ private fun LeaderboardRowCard(
         }
     }
 }
+
+private fun rowDescription(
+    entry: LeaderboardEntry,
+    metric: LeaderboardMetric,
+    unit: WeightUnit,
+): String = listOfNotNull(
+    "Rank ${entry.rank}",
+    entry.displayName,
+    "you".takeIf { entry.isCurrentUser },
+    if (metric == LeaderboardMetric.CURRENT_STREAK) {
+        "${entry.currentStreakDays} day streak"
+    } else {
+        "${metric.label}, ${metricValue(entry, metric, unit)}"
+    },
+    "${entry.totalWorkouts} workouts",
+    "${entry.prCount} personal records",
+).joinToString(", ")
 
 private fun medalFor(rank: Int): String = when (rank) {
     1 -> "🥇"

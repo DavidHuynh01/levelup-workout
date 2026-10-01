@@ -18,6 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.davidhuynh.levelup.domain.logic.ProgressPoint
@@ -51,6 +53,14 @@ fun ProgressChart(
     val top = if (best == lowest) best + 1.0 else best
     val bottom = if (best == lowest) lowest - 1.0 else lowest
     val span = top - bottom
+
+    val unitName = unit.label.lowercase()
+    val chartDescription = "Estimated one rep max over ${points.size} sessions, " +
+        "from ${WeightConverter.formatValue(first, unit)} to " +
+        "${WeightConverter.formatValue(latest, unit)} $unitName, " +
+        "best ${WeightConverter.formatValue(best, unit)} $unitName, " +
+        "${points.first().date.format(axisDateFormat)} to " +
+        points.last().date.format(axisDateFormat)
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -92,7 +102,8 @@ fun ProgressChart(
             Canvas(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(140.dp),
+                    .height(140.dp)
+                    .semantics { contentDescription = chartDescription },
             ) {
                 val markerRadius = 4.dp.toPx()
                 val inset = markerRadius + 2.dp.toPx()

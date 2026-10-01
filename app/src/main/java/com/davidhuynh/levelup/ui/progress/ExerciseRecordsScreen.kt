@@ -20,6 +20,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -124,7 +127,9 @@ fun ExerciseRecordsScreen(
                         Text(
                             text = type.label,
                             style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(top = Spacing.lg, bottom = Spacing.sm),
+                            modifier = Modifier
+                                .padding(top = Spacing.lg, bottom = Spacing.sm)
+                                .semantics { heading() },
                         )
                     }
                     items(records, key = { it.id }) { record ->
@@ -141,7 +146,15 @@ fun ExerciseRecordsScreen(
 @Composable
 private fun RecordHistoryRow(record: PersonalRecord, unit: WeightUnit) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {
+                contentDescription = listOfNotNull(
+                    displayValue(record, unit),
+                    record.achievedOnLocalDate.format(dateFormat),
+                    "Current record".takeIf { record.isCurrent },
+                ).joinToString(", ")
+            },
         colors = CardDefaults.cardColors(
             containerColor = if (record.isCurrent) {
                 MaterialTheme.colorScheme.primaryContainer

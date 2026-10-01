@@ -19,6 +19,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -52,7 +55,9 @@ fun HomeScreen(
         Text(
             text = greeting(state.displayName),
             style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(top = Spacing.lg),
+            modifier = Modifier
+                .padding(top = Spacing.lg)
+                .semantics { heading() },
         )
         Text(
             text = streakLine(state),
@@ -134,7 +139,9 @@ fun HomeScreen(
 private fun WorkoutRow(workout: Workout, unit: WeightUnit, onClick: () -> Unit) {
     Card(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics { contentDescription = workoutRowDescription(workout, unit) },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Row(
@@ -161,6 +168,14 @@ private fun WorkoutRow(workout: Workout, unit: WeightUnit, onClick: () -> Unit) 
         }
     }
 }
+
+private fun workoutRowDescription(workout: Workout, unit: WeightUnit): String = listOf(
+    workout.name,
+    workout.localDate.format(dateFormat),
+    "${workout.exerciseCount} exercises",
+    "${workout.setCount} sets",
+    "${WeightConverter.formatVolume(workout.totalVolumeKg, unit)} total volume",
+).joinToString(", ")
 
 private fun greeting(name: String): String =
     if (name.isBlank()) "Welcome back" else "Hey ${name.substringBefore(' ')}"

@@ -27,6 +27,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -125,7 +128,11 @@ fun WorkoutDetailScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = Spacing.md),
             ) {
-                Text(text = workout.name, style = MaterialTheme.typography.headlineSmall)
+                Text(
+                    text = workout.name,
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.semantics { heading() },
+                )
                 Text(
                     text = workout.localDate.format(dateFormat),
                     style = MaterialTheme.typography.bodyMedium,
@@ -170,12 +177,20 @@ fun WorkoutDetailScreen(
                 ) {
                     OutlinedButton(
                         onClick = { onEdit(workout.id) },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .semantics {
+                                contentDescription = "Edit ${workout.name}"
+                            },
                     ) { Text("Edit") }
 
                     OutlinedButton(
                         onClick = { confirmDelete = true },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .semantics {
+                                contentDescription = "Delete ${workout.name}"
+                            },
                     ) { Text("Delete", color = MaterialTheme.colorScheme.error) }
                 }
 
@@ -211,7 +226,11 @@ private fun ExerciseDetailCard(exercise: WorkoutExercise, unit: WeightUnit) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(text = exercise.exercise.name, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = exercise.exercise.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.semantics { heading() },
+                )
                 Text(
                     text = WeightConverter.formatVolume(
                         VolumeCalculator.exerciseVolumeKg(exercise),
@@ -219,6 +238,12 @@ private fun ExerciseDetailCard(exercise: WorkoutExercise, unit: WeightUnit) {
                     ),
                     style = MaterialTheme.typography.labelLarge,
                     color = AccentLime,
+                    modifier = Modifier.semantics {
+                        contentDescription = WeightConverter.formatVolume(
+                            VolumeCalculator.exerciseVolumeKg(exercise),
+                            unit,
+                        ) + " volume"
+                    },
                 )
             }
 
@@ -228,7 +253,13 @@ private fun ExerciseDetailCard(exercise: WorkoutExercise, unit: WeightUnit) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = Spacing.xs),
+                        .padding(vertical = Spacing.xs)
+                        .semantics(mergeDescendants = true) {
+                            contentDescription = (
+                                if (set.isWarmup) "Warmup set" else "Set ${set.setNumber}"
+                                ) + ", ${set.reps} reps at " +
+                                WeightConverter.format(set.weightKg, unit)
+                        },
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(

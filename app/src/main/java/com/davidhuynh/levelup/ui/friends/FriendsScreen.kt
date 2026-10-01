@@ -23,6 +23,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
@@ -217,7 +220,13 @@ private fun RequestCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics(mergeDescendants = true) {
+                        contentDescription = "${request.fromDisplayName} wants to be friends"
+                    },
+            ) {
                 Text(text = request.fromDisplayName, style = MaterialTheme.typography.titleMedium)
                 Text(
                     text = "wants to be friends",
@@ -225,8 +234,18 @@ private fun RequestCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            TextButton(onClick = onDecline) { Text("Decline") }
-            Button(onClick = onAccept) { Text("Accept") }
+            TextButton(
+                onClick = onDecline,
+                modifier = Modifier.semantics {
+                    contentDescription = "Decline request from ${request.fromDisplayName}"
+                },
+            ) { Text("Decline") }
+            Button(
+                onClick = onAccept,
+                modifier = Modifier.semantics {
+                    contentDescription = "Accept request from ${request.fromDisplayName}"
+                },
+            ) { Text("Accept") }
         }
     }
 }
@@ -246,14 +265,21 @@ private fun FriendCard(friend: Friend, onRemove: () -> Unit) {
             Text(
                 text = friend.avatarEmoji ?: "💪",
                 style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(end = Spacing.sm),
+                modifier = Modifier
+                    .padding(end = Spacing.sm)
+                    .clearAndSetSemantics { },
             )
             Text(
                 text = friend.displayName,
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.weight(1f),
             )
-            TextButton(onClick = onRemove) {
+            TextButton(
+                onClick = onRemove,
+                modifier = Modifier.semantics {
+                    contentDescription = "Remove ${friend.displayName} from friends"
+                },
+            ) {
                 Text("Remove", color = MaterialTheme.colorScheme.error)
             }
         }
@@ -280,9 +306,18 @@ private fun SearchResultCard(
             Text(
                 text = user.avatarEmoji ?: "💪",
                 style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(end = Spacing.sm),
+                modifier = Modifier
+                    .padding(end = Spacing.sm)
+                    .clearAndSetSemantics { },
             )
-            Column(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics(mergeDescendants = true) {
+                        contentDescription = "${user.displayName}, " +
+                            if (user.isDemo) "demo lifter" else user.email
+                    },
+            ) {
                 Text(text = user.displayName, style = MaterialTheme.typography.titleMedium)
                 Text(
                     text = if (user.isDemo) "Demo lifter" else user.email,
@@ -303,7 +338,12 @@ private fun SearchResultCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
-                else -> OutlinedButton(onClick = onAdd) { Text("Add") }
+                else -> OutlinedButton(
+                    onClick = onAdd,
+                    modifier = Modifier.semantics {
+                        contentDescription = "Send friend request to ${user.displayName}"
+                    },
+                ) { Text("Add") }
             }
         }
     }

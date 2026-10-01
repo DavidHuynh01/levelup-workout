@@ -31,6 +31,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.password
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -71,11 +76,17 @@ fun EmptyState(
             .padding(Spacing.xl),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(text = emoji, style = MaterialTheme.typography.displaySmall)
+        Text(
+            text = emoji,
+            style = MaterialTheme.typography.displaySmall,
+            modifier = Modifier.clearAndSetSemantics { },
+        )
         Text(
             text = title,
             style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(top = Spacing.md),
+            modifier = Modifier
+                .padding(top = Spacing.md)
+                .semantics { heading() },
         )
         Text(
             text = body,
@@ -173,12 +184,19 @@ fun PasswordField(
                 keyboardType = KeyboardType.Password,
                 imeAction = imeAction,
             ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics { if (!visible) password() },
             trailingIcon = {
-                TextButton(onClick = { visible = !visible }) {
+                TextButton(
+                    onClick = { visible = !visible },
+                    modifier = Modifier.semantics {
+                        contentDescription = if (visible) "Hide password" else "Show password"
+                    },
+                ) {
                     Text(if (visible) "Hide" else "Show")
                 }
             },
-            modifier = Modifier.fillMaxWidth(),
         )
 
         if (strength != null && value.isNotEmpty()) {
@@ -186,7 +204,10 @@ fun PasswordField(
                 progress = { strength / 4f },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = Spacing.xs, vertical = Spacing.xs),
+                    .padding(horizontal = Spacing.xs, vertical = Spacing.xs)
+                    .semantics {
+                        contentDescription = "Password strength ${strengthLabel(strength)}"
+                    },
                 color = when (strength) {
                     0, 1 -> MaterialTheme.colorScheme.error
                     2 -> MaterialTheme.colorScheme.secondary
@@ -206,6 +227,12 @@ fun PasswordField(
     }
 }
 
+private fun strengthLabel(strength: Int): String = when (strength) {
+    0, 1 -> "weak"
+    2 -> "fair"
+    else -> "strong"
+}
+
 @Composable
 fun StatCard(
     label: String,
@@ -215,7 +242,9 @@ fun StatCard(
     accent: Color? = null,
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier.semantics(mergeDescendants = true) {
+            contentDescription = listOfNotNull(label, value, caption).joinToString(", ")
+        },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Column(modifier = Modifier.padding(Spacing.md)) {
@@ -284,7 +313,18 @@ fun LevelUpTopBar(
         title = { Text(title) },
         navigationIcon = {
             if (onBack != null) {
-                IconButton(onClick = onBack) { Text("←", style = MaterialTheme.typography.titleLarge) }
+                IconButton(
+                    onClick = onBack,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .semantics { contentDescription = "Back" },
+                ) {
+                    Text(
+                        text = "←",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.clearAndSetSemantics { },
+                    )
+                }
             }
         },
         actions = { Row(verticalAlignment = Alignment.CenterVertically) { actions() } },
@@ -295,13 +335,21 @@ fun LevelUpTopBar(
 }
 
 @Composable
-fun CountBadge(count: Int, modifier: Modifier = Modifier) {
+fun CountBadge(
+    count: Int,
+    modifier: Modifier = Modifier,
+    description: String? = null,
+) {
     if (count <= 0) return
     Surface(
         color = MaterialTheme.colorScheme.error,
         contentColor = MaterialTheme.colorScheme.onError,
         shape = MaterialTheme.shapes.extraLarge,
-        modifier = modifier.size(20.dp),
+        modifier = modifier
+            .size(20.dp)
+            .semantics(mergeDescendants = true) {
+                contentDescription = description ?: "$count new"
+            },
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(
@@ -317,7 +365,9 @@ fun SectionHeader(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text,
         style = MaterialTheme.typography.titleMedium,
-        modifier = modifier.padding(top = Spacing.lg, bottom = Spacing.sm),
+        modifier = modifier
+            .padding(top = Spacing.lg, bottom = Spacing.sm)
+            .semantics { heading() },
     )
 }
 
@@ -326,7 +376,10 @@ fun KeyValueRow(label: String, value: String, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = Spacing.xs),
+            .padding(vertical = Spacing.xs)
+            .semantics(mergeDescendants = true) {
+                contentDescription = "$label, $value"
+            },
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(

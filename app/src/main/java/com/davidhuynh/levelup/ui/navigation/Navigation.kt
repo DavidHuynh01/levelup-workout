@@ -7,6 +7,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -72,9 +73,13 @@ fun LevelUpBottomBar(
                 },
                 icon = {
                     Box {
-                        Text(tab.icon)
+                        Text(tab.icon, modifier = Modifier.clearAndSetSemantics { })
                         if (tab == BottomTab.PROFILE && pendingRequestCount > 0) {
-                            CountBadge(pendingRequestCount, modifier = Modifier)
+                            CountBadge(
+                                count = pendingRequestCount,
+                                modifier = Modifier,
+                                description = "$pendingRequestCount pending friend requests",
+                            )
                         }
                     }
                 },

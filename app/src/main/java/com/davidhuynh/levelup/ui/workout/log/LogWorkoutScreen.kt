@@ -43,6 +43,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -107,6 +113,9 @@ fun LogWorkoutScreen(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = AccentLime,
+                        modifier = Modifier.semantics {
+                            contentDescription = "${state.totalVolumeDisplay} total volume"
+                        },
                     )
                 }
                 RestBar(
@@ -153,7 +162,12 @@ fun LogWorkoutScreen(
 
                 OutlinedButton(
                     onClick = { showDatePicker = true },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .semantics {
+                            contentDescription =
+                                "Workout date, ${state.date.format(dateFormat)}. Change date"
+                        },
                 ) {
                     Text("📅  ${state.date.format(dateFormat)}")
                 }
@@ -179,7 +193,8 @@ fun LogWorkoutScreen(
                     onClick = viewModel::openPicker,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(52.dp),
+                        .height(52.dp)
+                        .semantics { contentDescription = "Add exercise" },
                 ) {
                     Text("+  Add exercise")
                 }
@@ -249,14 +264,24 @@ private fun ExerciseBlockCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                TextButton(onClick = onRemoveExercise) {
+                TextButton(
+                    onClick = onRemoveExercise,
+                    modifier = Modifier.semantics {
+                        contentDescription = "Remove ${block.exercise.name}"
+                    },
+                ) {
                     Text("Remove", color = MaterialTheme.colorScheme.error)
                 }
             }
 
             HorizontalDivider(modifier = Modifier.padding(vertical = Spacing.sm))
 
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clearAndSetSemantics { },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text("SET", style = MaterialTheme.typography.labelMedium, modifier = Modifier.width(40.dp))
                 Text("REPS", style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
                 Text(
@@ -271,6 +296,7 @@ private fun ExerciseBlockCard(
                 SetRowEditor(
                     number = index + 1,
                     row = set,
+                    exerciseName = block.exercise.name,
                     onRepsChange = { onUpdateSet(set.key, it, null, null) },
                     onWeightChange = { onUpdateSet(set.key, null, it, null) },
                     onToggleWarmup = { onUpdateSet(set.key, null, null, !set.isWarmup) },
@@ -278,7 +304,14 @@ private fun ExerciseBlockCard(
                 )
             }
 
-            TextButton(onClick = onAddSet, modifier = Modifier.padding(top = Spacing.xs)) {
+            TextButton(
+                onClick = onAddSet,
+                modifier = Modifier
+                    .padding(top = Spacing.xs)
+                    .semantics {
+                        contentDescription = "Add set to ${block.exercise.name}"
+                    },
+            ) {
                 Text("+ Add set")
             }
         }
@@ -289,6 +322,7 @@ private fun ExerciseBlockCard(
 private fun SetRowEditor(
     number: Int,
     row: SetRow,
+    exerciseName: String,
     onRepsChange: (String) -> Unit,
     onWeightChange: (String) -> Unit,
     onToggleWarmup: () -> Unit,
@@ -304,7 +338,9 @@ private fun SetRowEditor(
             text = number.toString(),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(40.dp),
+            modifier = Modifier
+                .width(40.dp)
+                .semantics { contentDescription = "$exerciseName set $number" },
         )
         OutlinedTextField(
             value = row.reps,
@@ -314,7 +350,8 @@ private fun SetRowEditor(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier
                 .weight(1f)
-                .padding(end = Spacing.xs),
+                .padding(end = Spacing.xs)
+                .semantics { contentDescription = "Reps for set $number" },
         )
         OutlinedTextField(
             value = row.weight,
@@ -324,14 +361,27 @@ private fun SetRowEditor(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             modifier = Modifier
                 .weight(1f)
-                .padding(end = Spacing.xs),
+                .padding(end = Spacing.xs)
+                .semantics { contentDescription = "Weight for set $number" },
         )
         FilterChip(
             selected = row.isWarmup,
             onClick = onToggleWarmup,
             label = { Text("W") },
+            modifier = Modifier.semantics {
+                contentDescription = "Warmup set"
+                role = Role.Checkbox
+                stateDescription = if (row.isWarmup) "Checked" else "Not checked"
+            },
         )
-        TextButton(onClick = onRemove) { Text("✕") }
+        TextButton(
+            onClick = onRemove,
+            modifier = Modifier
+                .heightIn(min = 48.dp)
+                .semantics { contentDescription = "Remove set $number" },
+        ) {
+            Text(text = "✕", modifier = Modifier.clearAndSetSemantics { })
+        }
     }
 }
 

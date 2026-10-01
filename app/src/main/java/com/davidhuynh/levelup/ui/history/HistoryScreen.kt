@@ -17,6 +17,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -115,7 +118,15 @@ fun HistoryScreen(
 @Composable
 private fun MonthHeader(month: LocalDate, workouts: List<Workout>, unit: WeightUnit) {
     val volume = workouts.sumOf { it.totalVolumeKg }
-    Column(modifier = Modifier.padding(top = Spacing.lg, bottom = Spacing.sm)) {
+    Column(
+        modifier = Modifier
+            .padding(top = Spacing.lg, bottom = Spacing.sm)
+            .semantics(mergeDescendants = true) {
+                heading()
+                contentDescription = "${month.format(monthFormat)}, ${workouts.size} workouts, " +
+                    "${WeightConverter.formatVolume(volume, unit)} total volume"
+            },
+    ) {
         Text(text = month.format(monthFormat), style = MaterialTheme.typography.titleLarge)
         Text(
             text = "${workouts.size} workouts · ${WeightConverter.formatVolume(volume, unit)}",
@@ -129,7 +140,9 @@ private fun MonthHeader(month: LocalDate, workouts: List<Workout>, unit: WeightU
 fun WorkoutSummaryCard(workout: Workout, unit: WeightUnit, onClick: () -> Unit) {
     Card(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics { contentDescription = summaryDescription(workout, unit) },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Column(modifier = Modifier.padding(Spacing.md)) {
@@ -172,6 +185,17 @@ fun WorkoutSummaryCard(workout: Workout, unit: WeightUnit, onClick: () -> Unit) 
         }
     }
 }
+
+private fun summaryDescription(workout: Workout, unit: WeightUnit): String = listOfNotNull(
+    workout.name,
+    "${workout.localDate.format(dayFormat)}, ${relativeDay(workout.localDate)}",
+    "${WeightConverter.formatVolume(workout.totalVolumeKg, unit)} total volume",
+    "${workout.exerciseCount} exercises",
+    "${workout.setCount} sets",
+    workout.exercises
+        .takeIf { it.isNotEmpty() }
+        ?.joinToString(", ") { it.exercise.name },
+).joinToString(", ")
 
 private fun relativeDay(date: LocalDate): String {
     val days = ChronoUnit.DAYS.between(date, LocalDate.now())
